@@ -11,8 +11,13 @@
   <Folder Name="/4. Infra Layer/">
     <Project Path="src/Fiap.CRM.Infra.CrossCutting.IoC/Fiap.CRM.Infra.CrossCutting.IoC.csproj" />
     <Project Path="src/Fiap.CRM.Infra/Fiap.CRM.Infra.Data.csproj" />
+    <Project Path="src\Fiap.CRM.Infra.CrossCutting.CacheService\Fiap.CRM.Infra.CrossCutting.CacheService.csproj" Type="Classic C#" />
+    <Project Path="src\Fiap.CRM.Infra.CrossCutting.Http\Fiap.CRM.Infra.CrossCutting.Http.csproj" Type="Classic C#" />
+    <Project Path="src\Fiap.CRM.Infra.HostedService\Fiap.CRM.Infra.HostedService.csproj" Type="Classic C#" />
+    <Project Path="src\Fiap.CRM.Infra.Utils\Fiap.CRM.Infra.Utils.csproj" Type="Classic C#" />
   </Folder>
   <Folder Name="/5. Tests Layer/">
     <Project Path="test/Fiap.CRM.Unit.Tests/Fiap.CRM.Unit.Tests.csproj" />
+    <Project Path="test\Fiap.CRM.BDD.Tests\Fiap.CRM.BDD.Tests.csproj" Type="Classic C#" />
   </Folder>
 </Solution>

@@ -10,4 +10,10 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Fiap.CRM.Application\Fiap.CRM.Application.csproj" />
+    <ProjectReference Include="..\Fiap.CRM.Domain\Fiap.CRM.Domain.csproj" />
+    <ProjectReference Include="..\Fiap.CRM.Infra.Utils\Fiap.CRM.Infra.Utils.csproj" />
+  </ItemGroup>
+
 </Project>

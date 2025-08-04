@@ -6,4 +6,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Fiap.CRM.Domain\Fiap.CRM.Domain.csproj" />
+    <ProjectReference Include="..\Fiap.CRM.Infra.CrossCutting.CacheService\Fiap.CRM.Infra.CrossCutting.CacheService.csproj" />
+  </ItemGroup>
+
 </Project>
