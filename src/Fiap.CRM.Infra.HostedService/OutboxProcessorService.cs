@@ -11,7 +11,7 @@ namespace Fiap.CRM.Infra.HostedService;
   public class OutboxProcessorService(
         ILogger<OutboxProcessorService> logger,
         IServiceProvider serviceProvider,
-        IBus bus,
+        // IBus bus,
         IConfiguration configuration
         ) : BackgroundService
     {
@@ -64,9 +64,9 @@ namespace Fiap.CRM.Infra.HostedService;
                     {
                         JsonDocument.Parse(outbox.Content);
 
-                        logger.LogInformation("Publishing generic JSON message {OutboxId} to bus", outbox.Id);
-                        await bus.Advanced.Routing.Send(queueName, outbox.Content);
-                        logger.LogInformation("Successfully published message {OutboxId}", outbox.Id);
+                        // logger.LogInformation("Publishing generic JSON message {OutboxId} to bus", outbox.Id);
+                        // await bus.Advanced.Routing.Send(queueName, outbox.Content);
+                        // logger.LogInformation("Successfully published message {OutboxId}", outbox.Id);
 
                         success = true;
                     }
@@ -94,8 +94,8 @@ namespace Fiap.CRM.Infra.HostedService;
                         }
                         else
                         {
-                            await bus.Publish(eventMessage);
-                            logger.LogInformation("Successfully published typed message {OutboxId}", outbox.Id);
+                            // await bus.Publish(eventMessage);
+                            // logger.LogInformation("Successfully published typed message {OutboxId}", outbox.Id);
                             success = true;
                         }
                     }

@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using Fiap.CRM.Api.Extensions;
 using Fiap.CRM.Api.Middlewares;
 using Fiap.CRM.Infra.CrossCutting.IoC;
+using Fiap.CRM.Infra.Data;
 using Fiap.CRM.Infra.Utils;
 using HealthChecks.ApplicationStatus.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -34,7 +35,7 @@ builder.Services
     .AddHealthChecks()
     .AddMySql(databaseConnection.DefaultConnection, name: "mysql")
     .AddApplicationStatus()
-    .AddRedis(databaseConnection.RedisConnectionString);
+    .AddRedis(databaseConnection.RedisConnectionString, name: "redis");
 
 builder.Services.AddEndpointsApiExplorer();
 

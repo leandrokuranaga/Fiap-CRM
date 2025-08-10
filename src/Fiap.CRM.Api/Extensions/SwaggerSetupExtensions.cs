@@ -14,9 +14,9 @@ namespace Fiap.CRM.Api.Extensions;
             {
                 c.SwaggerDoc("v1", new OpenApiInfo
                 {
-                    Title = "FCG",
+                    Title = "CRM",
                     Version = "v1",
-                    Description = "Fiap Cloud Games - API Tech Challenge "
+                    Description = "Fiap CRM API",
                 });
 
                 c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -66,7 +66,7 @@ namespace Fiap.CRM.Api.Extensions;
             app.UseSwagger();
             app.UseSwaggerUI(c =>
             {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "FIAP API v1");
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "CRM API v1");
                 c.RoutePrefix = "swagger";
             });
         }
