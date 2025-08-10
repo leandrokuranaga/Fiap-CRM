@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Fiap.CRM.Application.Users.Models.Request;
 using Fiap.CRM.Domain.UserAggregate.Enums;
+using Swashbuckle.AspNetCore.Filters;
 
 namespace Fiap.CRM.Api.SwaggerExamples.Users;
 

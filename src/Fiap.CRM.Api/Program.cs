@@ -1,8 +1,12 @@
 using System.Diagnostics.CodeAnalysis;
 using Fiap.CRM.Api.Extensions;
 using Fiap.CRM.Api.Middlewares;
+using Fiap.CRM.Infra.CrossCutting.IoC;
 using Fiap.CRM.Infra.Utils;
+using HealthChecks.ApplicationStatus.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Prometheus;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,7 +32,7 @@ builder.Services.AddCustomMvc();
 
 builder.Services
     .AddHealthChecks()
-    .AddNpgSql(databaseConnection.DefaultConnection)
+    .AddMySql(databaseConnection.DefaultConnection, name: "mysql")
     .AddApplicationStatus()
     .AddRedis(databaseConnection.RedisConnectionString);
 

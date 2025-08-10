@@ -1,4 +1,5 @@
-﻿using Fiap.CRM.Application.Common;
+﻿using System.Text.Json;
+using Fiap.CRM.Application.Common;
 using Fiap.CRM.Application.Users.Models.Request;
 using Fiap.CRM.Application.Users.Models.Response;
 using Fiap.CRM.Application.Validators.UsersValidators;
@@ -57,7 +58,7 @@ namespace Fiap.CRM.Application.Users.Services;
 
             if (cachedUser == null)
             {
-                _notification.AddNotification("Get User", "User not found", NotificationModel.ENotificationType.NotFound);
+                notification.AddNotification("Get User", "User not found", NotificationModel.ENotificationType.NotFound);
                 return response;
             }
 
@@ -77,7 +78,7 @@ namespace Fiap.CRM.Application.Users.Services;
             var exists = await userRepository.ExistAsync(u => u.Email.Address == request.Email.ToLower());
             if (exists)
             {
-                _notification.AddNotification("Create User", "Email already registered", NotificationModel.ENotificationType.BusinessRules);
+                notification.AddNotification("Create User", "Email already registered", NotificationModel.ENotificationType.BusinessRules);
                 return response;
             }
 
@@ -122,7 +123,7 @@ namespace Fiap.CRM.Application.Users.Services;
             var exists = await userRepository.ExistAsync(u => u.Email.Address.ToLower() == email);
             if (exists)
             {
-                _notification.AddNotification("Create User", "Email already registered", NotificationModel.ENotificationType.BusinessRules);
+                notification.AddNotification("Create User", "Email already registered", NotificationModel.ENotificationType.BusinessRules);
                 return response;
             }
 
@@ -157,8 +158,8 @@ namespace Fiap.CRM.Application.Users.Services;
 
             if (user == null)
             {
-                _notification.AddNotification("Update User", "User not found", NotificationModel.ENotificationType.NotFound);
-                return BaseResponse<object>.Fail(_notification.NotificationModel);
+                notification.AddNotification("Update User", "User not found", NotificationModel.ENotificationType.NotFound);
+                return BaseResponse<object>.Fail(notification.NotificationModel);
             }
 
             UpdateUserProperties(user, request);
@@ -188,8 +189,8 @@ namespace Fiap.CRM.Application.Users.Services;
 
             if (user == null)
             {
-                _notification.AddNotification("Delete User", "User Not found", NotificationModel.ENotificationType.NotFound);
-                return BaseResponse<object>.Fail(_notification.NotificationModel);
+                notification.AddNotification("Delete User", "User Not found", NotificationModel.ENotificationType.NotFound);
+                return BaseResponse<object>.Fail(notification.NotificationModel);
             }
 
             await userRepository.DeleteAsync(user);
@@ -198,35 +199,5 @@ namespace Fiap.CRM.Application.Users.Services;
             await cache.RemoveAsync(EnumCacheTags.UserGames(id), EnumCacheTags.UserId(id), EnumCacheTags.AllUsers);
 
             return BaseResponse<object>.Ok(null);
-        });
-
-        public Task<List<UserLibraryGameResponse>> GetGamesByUserAsync(int id) => ExecuteAsync(async () =>
-        {
-            var cacheKey = EnumCacheTags.UserGames(id);
-
-            async Task<List<LibraryGame>> fallbackFunc()
-            {
-                logger.LogInformation("Cache miss for user games {UserId}. Fetching from database.", id);
-
-                var user = await userRepository.GetByIdGameUserAsync(id, noTracking: true);
-
-                if (user is null)
-                {
-                    _notification.AddNotification("Get User", "User not found", NotificationModel.ENotificationType.NotFound);
-                    return [];
-                }
-
-                return user.LibraryGames.ToList();
-            }
-
-            var cachedUserGames = await cache.GetOrSetAsync(cacheKey, fallbackFunc);
-
-            if (cachedUserGames == null)
-            {
-                _notification.AddNotification("Get User", "User not found", NotificationModel.ENotificationType.NotFound);
-                return [];
-            }
-
-            return cachedUserGames.Select(lg => (UserLibraryGameResponse)lg).ToList();
         });
     }

@@ -1,9 +1,13 @@
 ﻿using System.Net;
+using Fiap.CRM.Api.SwaggerExamples.Common;
+using Fiap.CRM.Application.Auth.Models.Request;
 using Fiap.CRM.Application.Auth.Models.Response;
 using Fiap.CRM.Application.Auth.Services;
 using Fiap.CRM.Application.Common;
 using Fiap.CRM.Domain.SeedWork;
 using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Annotations;
+using Swashbuckle.AspNetCore.Filters;
 
 namespace Fiap.CRM.Api.Controllers;
 

@@ -1,16 +1,30 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using Fiap.CRM.Application.Auth.Services;
+using Fiap.CRM.Application.Users.Services;
 using Fiap.CRM.Domain.OutboxAggregate;
 using Fiap.CRM.Domain.SeedWork;
 using Fiap.CRM.Domain.UserAggregate;
 using Fiap.CRM.Infra.CacheService.Services;
 using Fiap.CRM.Infra.Data;
+using Fiap.CRM.Infra.Data.Repositories;
 using Fiap.CRM.Infra.HostedService;
 using Fiap.CRM.Infra.Utils;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using OpenTelemetry.Exporter;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
+using Rebus.Config;
+using Rebus.Routing.TypeBased;
+using Serilog;
+using Serilog.Sinks.Grafana.Loki;
 using StackExchange.Redis;
 
 namespace Fiap.CRM.Infra.CrossCutting.IoC;
@@ -40,7 +54,7 @@ namespace Fiap.CRM.Infra.CrossCutting.IoC;
             var databaseConnection = serviceProvider.GetRequiredService<IOptions<ConnectionStrings>>().Value;
             
             services.AddDbContext<Context>(options =>
-                options.UseNpgsql(databaseConnection.DefaultConnection));
+                options.UseMySql(databaseConnection.DefaultConnection, new MySqlServerVersion(new Version(8, 0, 21))));
         }
 
         public static void AddLocalHttpClients(this IServiceCollection services, IConfiguration configuration) { }

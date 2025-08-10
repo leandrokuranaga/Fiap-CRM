@@ -25,6 +25,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\src\Fiap.CRM.Application\Fiap.CRM.Application.csproj" />
       <ProjectReference Include="..\..\src\Fiap.CRM.Domain\Fiap.CRM.Domain.csproj" />
     </ItemGroup>
 

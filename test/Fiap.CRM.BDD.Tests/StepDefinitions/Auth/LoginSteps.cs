@@ -1,4 +1,7 @@
-﻿using Fiap.CRM.Domain.SeedWork.Exceptions;
+﻿using Fiap.CRM.Application.Auth.Models.Request;
+using Fiap.CRM.Application.Auth.Models.Response;
+using Fiap.CRM.Application.Auth.Services;
+using Fiap.CRM.Domain.SeedWork.Exceptions;
 
 namespace Fiap.CRM.BDD.Tests.StepDefinitions.Auth;
 
@@ -45,7 +48,7 @@ namespace Fiap.CRM.BDD.Tests.StepDefinitions.Auth;
                     .Setup(s => s.LoginAsync(_loginRequest))
                     .ReturnsAsync(new LoginResponse { Token = "jwt-token-admin", Expiration = DateTime.UtcNow.AddHours(2) });
             }
-            else // user/"654321" or other invalid combos
+            else
             {
                 _authServiceMock
                     .Setup(s => s.LoginAsync(_loginRequest))

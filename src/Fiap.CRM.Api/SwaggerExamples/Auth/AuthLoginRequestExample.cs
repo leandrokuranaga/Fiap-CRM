@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Fiap.CRM.Application.Auth.Models.Request;
+using Swashbuckle.AspNetCore.Filters;
 
 namespace Fiap.CRM.Api.SwaggerExamples.Auth;
 

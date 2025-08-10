@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Fiap.CRM.Application.Users.Models.Request;
+using FluentValidation;
 
 namespace Fiap.CRM.Application.Validators.UsersValidators;
 

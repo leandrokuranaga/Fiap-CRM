@@ -1,4 +1,8 @@
-﻿namespace Fiap.CRM.Application.Users.Services;
+﻿using Fiap.CRM.Application.Common;
+using Fiap.CRM.Application.Users.Models.Request;
+using Fiap.CRM.Application.Users.Models.Response;
+
+namespace Fiap.CRM.Application.Users.Services;
 
 public interface IUsersService
 {
@@ -8,5 +12,4 @@ public interface IUsersService
     Task<UserResponse> CreateAdminAsync(CreateUserAdminRequest request);
     Task<BaseResponse<object>> UpdateAsync(int id, UpdateUserRequest request);
     Task<BaseResponse<object>> DeleteAsync(int id);
-    Task<List<UserLibraryGameResponse>> GetGamesByUserAsync(int IdUser);
 }

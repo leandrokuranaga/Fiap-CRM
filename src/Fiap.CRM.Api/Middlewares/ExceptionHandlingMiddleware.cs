@@ -5,6 +5,7 @@ using Fiap.CRM.Application.Common;
 using Fiap.CRM.Application.Validators;
 using Fiap.CRM.Domain.SeedWork;
 using Fiap.CRM.Domain.SeedWork.Exceptions;
+using Serilog;
 
 namespace Fiap.CRM.Api.Middlewares;
 

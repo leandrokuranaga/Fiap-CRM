@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Fiap.CRM.Application.Common;
 using Fiap.CRM.Domain.SeedWork;
+using Swashbuckle.AspNetCore.Filters;
 
 namespace Fiap.CRM.Api.SwaggerExamples.Common;
 

@@ -24,7 +24,5 @@ public class LibraryGame : Entity
     public UtcDate PurchaseDate { get; set; }
     public Money PricePaid { get; set; }
 
-    public virtual Game Game { get; set; }
-    [JsonIgnore]
     public virtual User User { get; set; }
 }

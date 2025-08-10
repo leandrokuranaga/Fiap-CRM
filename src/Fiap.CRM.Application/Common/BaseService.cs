@@ -2,6 +2,8 @@
 using System.Diagnostics.CodeAnalysis;
 using Fiap.CRM.Application.Validators;
 using Fiap.CRM.Domain.SeedWork;
+using FluentValidation;
+using ValidationResult = FluentValidation.Results.ValidationResult;
 
 namespace Fiap.CRM.Application.Common;
 
