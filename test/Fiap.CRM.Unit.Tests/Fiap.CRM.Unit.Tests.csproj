@@ -21,9 +21,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="1. Api Layer Tests\" />
     <Folder Include="2. Application Layer Tests\" />
     <Folder Include="3. Domain Layer Tests\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Fiap.CRM.Api\Fiap.CRM.Api.csproj" />
+    <ProjectReference Include="..\..\src\Fiap.CRM.Application\Fiap.CRM.Application.csproj" />
+    <ProjectReference Include="..\..\src\Fiap.CRM.Domain\Fiap.CRM.Domain.csproj" />
   </ItemGroup>
 
 </Project>
