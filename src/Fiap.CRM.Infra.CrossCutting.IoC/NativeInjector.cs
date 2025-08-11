@@ -177,7 +177,7 @@ public static class NativeInjector
             .Enrich.WithEnvironmentName()
             .Enrich.WithMachineName()
             .Enrich.WithProcessId()
-            .Enrich.WithProperty("Application", "Fiap")
+            .Enrich.WithProperty("Application", "CRM")
             .WriteTo.Console()
             .WriteTo.GrafanaLoki(
                 uri: lokiUri,
