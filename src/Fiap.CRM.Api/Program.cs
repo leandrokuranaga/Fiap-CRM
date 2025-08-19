@@ -35,7 +35,7 @@ builder.Services.AddOptions<ConnectionStrings>()
 var serviceProvider = builder.Services.BuildServiceProvider();
 var databaseConnection = serviceProvider.GetRequiredService<IOptions<ConnectionStrings>>().Value;
 
-builder.Services.AddCustomServices(builder.Configuration);
+builder.Services.AddCustomServices(builder.Configuration, builder.Environment);
 
 builder.Host.UseSerilog();
 
