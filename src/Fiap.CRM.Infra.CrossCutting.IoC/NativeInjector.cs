@@ -9,6 +9,8 @@ using Fiap.CRM.Domain.OutboxAggregate;
 using Fiap.CRM.Domain.SeedWork;
 using Fiap.CRM.Domain.UserAggregate;
 using Fiap.CRM.Infra.CacheService.Services;
+using Fiap.CRM.Infra.CrossCutting.Http.Keycloak.Models;
+using Fiap.CRM.Infra.CrossCutting.Http.Keycloak.Service;
 using Fiap.CRM.Infra.Data;
 using Fiap.CRM.Infra.Data.Repositories;
 using Fiap.CRM.Infra.HandleBus.Handlers;
@@ -90,6 +92,21 @@ public static class NativeInjector
         #region Services
         services.AddScoped<IUsersService, UsersService>();
         services.AddScoped<IAuthService, AuthService>();
+
+        services.AddOptions<KeycloakOptions>()
+        .Bind(configuration.GetSection("Keycloak"))
+        .ValidateDataAnnotations()
+        .ValidateOnStart();
+
+        services.AddHttpClient<IKeycloakService, KeycloakService>((sp, client) =>
+        {
+            var options = sp.GetRequiredService<IOptions<KeycloakOptions>>().Value;
+            if (string.IsNullOrEmpty(options.AuthorityHost))
+                throw new ArgumentNullException(nameof(options.AuthorityHost), "O AuthorityHost do Keycloak não pode ser nulo");
+
+            client.BaseAddress = new Uri(options.AuthorityHost);
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+        });
         #endregion
 
         #region Bus Services

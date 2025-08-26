@@ -10,6 +10,7 @@ using Fiap.CRM.Domain.SeedWork.Enums;
 using Fiap.CRM.Domain.UserAggregate;
 using Fiap.CRM.Domain.UserAggregate.ValueObjects;
 using Fiap.CRM.Infra.CacheService.Services;
+using Fiap.CRM.Infra.CrossCutting.Http.Keycloak.Service;
 using Microsoft.Extensions.Logging;
 
 namespace Fiap.CRM.Application.Users.Services;
@@ -17,6 +18,7 @@ namespace Fiap.CRM.Application.Users.Services;
  public class UsersService(
         INotification notification,
         IUserRepository userRepository,
+        IKeycloakService keycloakService,
         IUnitOfWork unitOfWork,
         ICacheService cache,
         IOutboxRepository outboxRepository,
@@ -80,8 +82,15 @@ namespace Fiap.CRM.Application.Users.Services;
                 await userRepository.InsertOrUpdateAsync(user);
                 await userRepository.SaveChangesAsync();
 
-                var createUserEvent = new CreateUserIntegrationEvent(user.Id, user.Name, user.Email.Address, (int)user.TypeUser, user.Active);
-                var outbox = CreateOutboxMessage(createUserEvent);
+            var kcResult = await keycloakService.CreateUserAsync(user.Email.Address, user.Name, request.Password, user.TypeUser.ToString());
+            if (!kcResult)
+            {
+                notification.AddNotification("Keycloak", "Erro ao criar usuário no Keycloak", NotificationModel.ENotificationType.BusinessRules);
+                await unitOfWork.RollbackAsync();
+                return response;
+            }
+
+            var outbox = CreateOutboxMessage("object", user);
 
                 await outboxRepository.InsertOrUpdateAsync(outbox);
                 await outboxRepository.SaveChangesAsync();
@@ -120,8 +129,16 @@ namespace Fiap.CRM.Application.Users.Services;
             await userRepository.InsertOrUpdateAsync(user);
             await userRepository.SaveChangesAsync();
 
-            var createUserEvent = new CreateUserIntegrationEvent(user.Id, user.Name, user.Email.Address, (int)user.TypeUser, user.Active);
-            var outbox = CreateOutboxMessage(createUserEvent);
+            var kcResult = await keycloakService.CreateUserAsync(user.Email.Address, user.Name, request.Password, request.TypeUser.ToString());
+            if (!kcResult)
+            {
+                notification.AddNotification("Keycloak", "Erro ao criar usuário no Keycloak", NotificationModel.ENotificationType.BusinessRules);
+                await unitOfWork.RollbackAsync();
+                return response;
+            }
+
+
+            var outbox = CreateOutboxMessage("object", user);
 
             await outboxRepository.InsertOrUpdateAsync(outbox);
             await outboxRepository.SaveChangesAsync();
@@ -176,6 +193,13 @@ namespace Fiap.CRM.Application.Users.Services;
             if (user is null)
             {
                 notification.AddNotification("Delete User", "User Not found", NotificationModel.ENotificationType.NotFound);
+                return BaseResponse<object>.Fail(notification.NotificationModel);
+            }
+
+            var kcDeleted = await keycloakService.DeleteUserAsync(user.Email.Address);
+            if (!kcDeleted)
+            {
+                notification.AddNotification("Keycloak", "Erro ao deletar usuário no Keycloak", NotificationModel.ENotificationType.BusinessRules);
                 return BaseResponse<object>.Fail(notification.NotificationModel);
             }
 
