@@ -11,6 +11,8 @@ namespace Fiap.CRM.Infra.CrossCutting.Http.Keycloak.Models
         public string Authority { get; set; } = null!;
         public string AuthorityHost { get; set; } = null!;
         public string Realm { get; set; } = null!;
+        public string? ClientId { get; set; } 
+        public string? ClientSecret { get; set; }
         public AdminOptions Admin { get; set; } = new AdminOptions();
 
         public class AdminOptions
@@ -20,3 +22,4 @@ namespace Fiap.CRM.Infra.CrossCutting.Http.Keycloak.Models
         }
     }
 }
+

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Fiap.CRM.Infra.CrossCutting.Http.Keycloak.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,5 +11,6 @@ namespace Fiap.CRM.Infra.CrossCutting.Http.Keycloak.Service
     {
         Task<bool> CreateUserAsync(string email, string name, string password, string role);
         Task<bool> DeleteUserAsync(string email);
+        Task<KeycloakTokenResponse?> GetUserTokenAsync(string username, string password);
     }
 }

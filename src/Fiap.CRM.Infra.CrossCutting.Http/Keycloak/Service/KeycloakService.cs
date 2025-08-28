@@ -31,6 +31,10 @@ namespace Fiap.CRM.Infra.CrossCutting.Http.Keycloak.Service
                 throw new ArgumentNullException(nameof(_options.AuthorityHost), "AuthorityHost do Keycloak não pode ser nulo");
             if (string.IsNullOrEmpty(_options.Realm))
                 throw new ArgumentNullException(nameof(_options.Realm), "Realm do Keycloak não pode ser nulo");
+            if (string.IsNullOrEmpty(_options.ClientId))
+                throw new ArgumentNullException(nameof(_options.ClientId), "ClientId do Keycloak não pode ser nulo");
+            if (string.IsNullOrEmpty(_options.ClientSecret))
+                throw new ArgumentNullException(nameof(_options.ClientSecret), "ClientSecret do Keycloak não pode ser nulo");
         }
 
         private async Task<string> GetAdminTokenAsync()
@@ -58,6 +62,35 @@ namespace Fiap.CRM.Infra.CrossCutting.Http.Keycloak.Service
             return _accessToken!;
         }
 
+        public async Task<KeycloakTokenResponse?> GetUserTokenAsync(string username, string password)
+        {
+            var tokenEndpoint = $"{_options.AuthorityHost}/realms/{_options.Realm}/protocol/openid-connect/token";
+
+            var body = new FormUrlEncodedContent(new[]
+            {
+                new KeyValuePair<string, string>("client_id", _options.ClientId),
+                new KeyValuePair<string, string>("client_secret", _options.ClientSecret),
+                new KeyValuePair<string, string>("username", username),
+                new KeyValuePair<string, string>("password", password),
+                new KeyValuePair<string, string>("grant_type", "password")
+            });
+
+            try
+            {
+                var response = await _http.PostAsync(tokenEndpoint, body);
+                response.EnsureSuccessStatusCode();
+
+                var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+                return JsonSerializer.Deserialize<KeycloakTokenResponse>(payload);
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogError(ex, "Falha ao obter token de usuário {Username}. Status: {Status}", username, ex.StatusCode);
+                return null;
+            }
+        }
+
+
         private async Task<HttpRequestMessage> CreateRequestAsync(HttpMethod method, string url, object? content = null)
         {
             var token = await GetAdminTokenAsync();
@@ -83,6 +116,7 @@ namespace Fiap.CRM.Infra.CrossCutting.Http.Keycloak.Service
                 email,
                 firstName = name,
                 enabled = true,
+                emailVerified = true,
                 credentials = new[]
                 {
                     new {
