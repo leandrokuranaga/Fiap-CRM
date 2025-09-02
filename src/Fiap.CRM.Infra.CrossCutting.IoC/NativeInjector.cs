@@ -1,11 +1,11 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using System.Text;
-using Fiap.CRM.Application.Auth.Services;
+﻿using Fiap.CRM.Application.Auth.Services;
 using Fiap.CRM.Application.Users.Services;
 using Fiap.CRM.Domain.OutboxAggregate;
 using Fiap.CRM.Domain.SeedWork;
 using Fiap.CRM.Domain.UserAggregate;
 using Fiap.CRM.Infra.CacheService.Services;
+using Fiap.CRM.Infra.CrossCutting.Http.Keycloak.Models;
+using Fiap.CRM.Infra.CrossCutting.Http.Keycloak.Service;
 using Fiap.CRM.Infra.Data;
 using Fiap.CRM.Infra.Data.Repositories;
 using Fiap.CRM.Infra.HostedService;
@@ -16,6 +16,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using OpenTelemetry.Exporter;
@@ -26,17 +27,21 @@ using Rebus.Routing.TypeBased;
 using Serilog;
 using Serilog.Sinks.Grafana.Loki;
 using StackExchange.Redis;
+using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Security.Claims;
+using System.Text;
 
 namespace Fiap.CRM.Infra.CrossCutting.IoC;
 
 [ExcludeFromCodeCoverage]
 public static class NativeInjector
 {
-    public static void AddCustomServices(this IServiceCollection services, IConfiguration configuration)
+    public static void AddCustomServices(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment environment)
     {
         AddLocalHttpClients(services, configuration);
         AddLocalServices(services, configuration);
-        AddCustomAuthentication(services, configuration);
+        AddCustomAuthentication(services, configuration, environment);
         AddRedisDatabase(services, configuration);
         AddObservability(services, configuration, services.BuildServiceProvider().GetRequiredService<IWebHostEnvironment>());
         AddDatabase(services, configuration);
@@ -50,7 +55,7 @@ public static class NativeInjector
             .ValidateOnStart();
 
         var connectionString = configuration.GetConnectionString("DefaultConnection");
-        
+
         services.AddDbContext<Context>(options =>
             options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 21))));
     }
@@ -72,15 +77,31 @@ public static class NativeInjector
         #region Services
         services.AddScoped<IUsersService, UsersService>();
         services.AddScoped<IAuthService, AuthService>();
+
+        services.AddOptions<KeycloakOptions>()
+        .Bind(configuration.GetSection("Keycloak"))
+        .ValidateDataAnnotations()
+        .ValidateOnStart();
+
+        services.AddHttpClient<IKeycloakService, KeycloakService>((sp, client) =>
+        {
+            var options = sp.GetRequiredService<IOptions<KeycloakOptions>>().Value;
+            if (string.IsNullOrEmpty(options.AuthorityHost))
+                throw new ArgumentNullException(nameof(options.AuthorityHost), "O AuthorityHost do Keycloak não pode ser nulo");
+
+            client.BaseAddress = new Uri(options.AuthorityHost);
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+        });
         #endregion
     }
 
-    public static void AddCustomAuthentication(this IServiceCollection services, IConfiguration configuration)
+    public static void AddCustomAuthentication(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment environment)
     {
-        services.AddOptions<JwtSettings>()
-            .Bind(configuration.GetSection(nameof(JwtSettings)))
-            .ValidateDataAnnotations()
-            .ValidateOnStart();
+
+        // Vincula as configurações à classe KeycloakSettings
+        var keycloakSettings = new KeycloakSettings();
+        configuration.GetSection(KeycloakSettings.SectionName).Bind(keycloakSettings);
+        services.AddSingleton(keycloakSettings);
 
         services.AddAuthentication(options =>
         {
@@ -89,26 +110,79 @@ public static class NativeInjector
         })
         .AddJwtBearer(options =>
         {
-            var jwtSection = configuration.GetSection(nameof(JwtSettings));
-            var secretKey = jwtSection["SecretKey"];
+            options.Authority = keycloakSettings.Authority;
+            options.Audience = keycloakSettings.Audience;
 
             options.TokenValidationParameters = new TokenValidationParameters
             {
-                ValidateIssuer = false,
-                ValidateAudience = false,
-                ValidateLifetime = true,
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+                ValidAudience = keycloakSettings.Audience,
+                ValidateAudience = true
+            };
+
+            if (environment.IsDevelopment())
+            {
+                options.RequireHttpsMetadata = false;
+            }
+
+
+            options.Events = new JwtBearerEvents
+            {
+                OnTokenValidated = context =>
+                {
+
+                    if (context.Principal?.Identity is ClaimsIdentity claimsIdentity)
+                    {
+
+                        var realmAccessClaim = context.Principal.FindFirst("realm_access");
+                        var resourceAccessClaim = context.Principal.FindFirst("resource_access");
+
+
+                        if (realmAccessClaim != null && realmAccessClaim.Value.Length > 0)
+                        {
+                            var realmAccess = System.Text.Json.JsonDocument.Parse(realmAccessClaim.Value);
+                            if (realmAccess.RootElement.TryGetProperty("roles", out var roles))
+                            {
+                                foreach (var role in roles.EnumerateArray())
+                                {
+                                    var roleName = role.GetString();
+                                    if (!string.IsNullOrEmpty(roleName))
+                                    {
+                                        claimsIdentity.AddClaim(new Claim(ClaimTypes.Role, roleName));
+                                    }
+                                }
+                            }
+                        }
+
+                        if (resourceAccessClaim != null && resourceAccessClaim.Value.Length > 0)
+                        {
+                            var resourceAccess = System.Text.Json.JsonDocument.Parse(resourceAccessClaim.Value);
+
+                            if (resourceAccess.RootElement.TryGetProperty(keycloakSettings.Audience, out var clientRolesElement))
+                            {
+                                if (clientRolesElement.TryGetProperty("roles", out var roles))
+                                {
+                                    foreach (var role in roles.EnumerateArray())
+                                    {
+                                        var roleName = role.GetString();
+                                        if (!string.IsNullOrEmpty(roleName))
+                                        {
+                                            claimsIdentity.AddClaim(new Claim(ClaimTypes.Role, roleName));
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    return Task.CompletedTask;
+                }
             };
         });
-
-        services.AddAuthorization();
     }
 
     public static void AddRedisDatabase(this IServiceCollection services, IConfiguration configuration)
     {
         var redisConnectionString = configuration.GetConnectionString("Redis");
-        
+
         services.AddStackExchangeRedisCache(options =>
         {
             options.Configuration = redisConnectionString;
@@ -133,7 +207,7 @@ public static class NativeInjector
                 Expiration = TimeSpan.FromMinutes(60)
             };
         });
-        
+
         services.AddSingleton<ICacheService, CacheService.Services.CacheService>();
     }
 

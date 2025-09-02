@@ -161,7 +161,7 @@ public class UsersController(IUsersService usersService, INotification notificat
     /// </summary>
     /// <returns>The list of users information.</returns>
     [HttpGet]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "User")]
     [SwaggerOperation(
         Summary = "Retrieve a list of all users.",
         Description = "Returns a list of all registered users. Only accessible by admins. May return an empty list if no users exist. Returns 401/403 if access is unauthorized."

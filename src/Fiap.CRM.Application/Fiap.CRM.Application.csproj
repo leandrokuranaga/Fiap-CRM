@@ -9,6 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Fiap.CRM.Domain\Fiap.CRM.Domain.csproj" />
     <ProjectReference Include="..\Fiap.CRM.Infra.CrossCutting.CacheService\Fiap.CRM.Infra.CrossCutting.CacheService.csproj" />
+    <ProjectReference Include="..\Fiap.CRM.Infra.CrossCutting.Http\Fiap.CRM.Infra.CrossCutting.Http.csproj" />
   </ItemGroup>
 
   <ItemGroup>
