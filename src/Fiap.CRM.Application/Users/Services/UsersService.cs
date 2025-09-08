@@ -25,70 +25,75 @@ namespace Fiap.CRM.Application.Users.Services;
     {
         public Task<List<UserResponse>> GetAllAsync() => ExecuteAsync(async () =>
         {
-            logger.LogInformation("Getting all users directly from database (cache disabled for debug).");
-            var users = await userRepository.GetAllWithLibraryAsync();
-            
-            var allUsers = users
-                .Select(user => (UserResponse)user)
-                .ToList();
+            await cache.RemoveAsync(EnumCacheTags.AllUsers);
+            var list = await cache.GetOrSetAsync(
+                EnumCacheTags.AllUsers,
+                async () =>
+                {
+                    var users = await userRepository.GetAllWithLibraryAsync();
+                    return users.Select(u => (UserResponse)u).ToList();
+                });
 
-            return allUsers;
+            return list ?? [];
         });
 
-        public Task<UserResponse> GetAsync(int userId, CancellationToken ct = default) => ExecuteAsync(async () =>
+        public Task<UserResponse> GetAsync(int userId) => ExecuteAsync(async () =>
         {
-            logger.LogInformation("Getting user {UserId} directly from database (cache disabled for debug).", userId);
-            var user = await userRepository.GetWithLibraryAsync(userId);
+            var cacheKey = EnumCacheTags.UserId(userId);
 
-            var response = new UserResponse();
-            
-            if (user is null)
+            var resp = await cache.GetOrSetAsync(
+                cacheKey,
+                async () =>
+                {
+                    var u = await userRepository.GetWithLibraryAsync(userId);
+                    return u is null ? null : (UserResponse)u;
+                });
+
+            if (resp is null)
             {
                 notification.AddNotification("Get User", "User not found", NotificationModel.ENotificationType.NotFound);
-                return response;
+                return new UserResponse();
             }
 
-            response = (UserResponse)user;
-
-            return response;
+            return resp;
         });
 
         public Task<UserResponse> CreateAsync(CreateUserRequest request) => ExecuteAsync(async () =>
-        {
-            var response = new UserResponse();
-
-            Validate(request, new CreateUserRequestValidator());
-
-            var email = request.Email.Trim().ToLowerInvariant();
-
-            var exists = await userRepository.ExistAsync(u => u.Email.Address == request.Email.ToLower());
-            if (exists)
             {
-                notification.AddNotification("Create User", "Email already registered", NotificationModel.ENotificationType.BusinessRules);
+                var response = new UserResponse();
+
+                Validate(request, new CreateUserRequestValidator());
+
+                var email = request.Email.Trim().ToLowerInvariant();
+
+                var exists = await userRepository.ExistAsync(u => u.Email.Address == request.Email.ToLower());
+                if (exists)
+                {
+                    notification.AddNotification("Create User", "Email already registered", NotificationModel.ENotificationType.BusinessRules);
+                    return response;
+                }
+
+                var user = (User)request;
+
+                await unitOfWork.BeginTransactionAsync();
+
+                await userRepository.InsertOrUpdateAsync(user);
+                await userRepository.SaveChangesAsync();
+
+                var createUserEvent = new CreateUserIntegrationEvent(user.Id, user.Name, user.Email.Address, (int)user.TypeUser, user.Active);
+                var outbox = CreateOutboxMessage(createUserEvent);
+
+                await outboxRepository.InsertOrUpdateAsync(outbox);
+                await outboxRepository.SaveChangesAsync();
+
+                await unitOfWork.CommitAsync();
+
+                await cache.RemoveAsync(EnumCacheTags.AllUsers);
+
+                response = (UserResponse)user;
+
                 return response;
-            }
-
-            var user = (User)request;
-
-            await unitOfWork.BeginTransactionAsync();
-
-            await userRepository.InsertOrUpdateAsync(user);
-            await userRepository.SaveChangesAsync();
-
-            var createUserEvent = new CreateUserIntegrationEvent(user.Id, user.Name, user.Email.Address, (int)user.TypeUser, user.Active);
-            var outbox = CreateOutboxMessage(createUserEvent);
-
-            await outboxRepository.InsertOrUpdateAsync(outbox);
-            await outboxRepository.SaveChangesAsync();
-
-            await unitOfWork.CommitAsync();
-
-            await cache.RemoveAsync(EnumCacheTags.AllUsers);
-
-            response = (UserResponse)user;
-
-            return response;
-        });
+            });
 
         private OutboxMessage CreateOutboxMessage<T>(T content) where T : class => 
             new(typeof(T).AssemblyQualifiedName!, JsonSerializer.Serialize(content), DateTime.UtcNow);

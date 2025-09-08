@@ -8,12 +8,11 @@ public class UserRepository(Context context) : BaseRepository<User>(context), IU
 {
     public async Task<User?> GetWithLibraryAsync(int userId, CancellationToken ct = default)
     {
-        var user = await context.Users.Include(u => u.LibraryGames).Where(u => u.Id == userId).FirstOrDefaultAsync(ct);
-        if (user != null)
-        {
-            System.Console.WriteLine($"[DEBUG] GetWithLibraryAsync User {user.Id} has {user.LibraryGames.Count} library games in repository");
-        }
-        return user;
+        return await context.Users
+            .AsNoTracking()
+            .Include(u => u.LibraryGames)
+            .Where(u => u.Id == userId)
+            .FirstOrDefaultAsync(ct);
     }
 
     public Task<bool> HasGameAsync(int userId, int gameId, CancellationToken ct = default) =>
@@ -31,12 +30,9 @@ public class UserRepository(Context context) : BaseRepository<User>(context), IU
 
     public async Task<IEnumerable<User>> GetAllWithLibraryAsync(CancellationToken ct = default)
     {
-        var users = await context.Users.Include(u => u.LibraryGames).ToListAsync(ct);
-        System.Console.WriteLine($"[DEBUG] GetAllWithLibraryAsync returned {users.Count} users");
-        foreach (var user in users)
-        {
-            System.Console.WriteLine($"[DEBUG] User {user.Id} has {user.LibraryGames.Count} library games in repository");
-        }
-        return users;
+        return await context.Users
+            .AsNoTracking()
+            .Include(u => u.LibraryGames)
+            .ToListAsync(ct);
     }
 }
