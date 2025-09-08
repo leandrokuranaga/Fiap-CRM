@@ -103,15 +103,18 @@ jobs:
 
       - name: Extract Version to Phase Stage
         id: phase
+        env:
+          PHASE_OFFSET: 2   
         run: |
-          VERSION="${{ steps.validate.outputs.version }}" 
-          MAJOR=$(echo "$VERSION" | cut -d. -f1 | sed 's/v//') 
-          echo "phase=$MAJOR" >> $GITHUB_OUTPUT
+          VERSION="${{ steps.validate.outputs.version }}"
+          MAJOR=$(echo "$VERSION" | cut -d. -f1 | sed 's/v//')
+          PHASE=$((MAJOR + ${PHASE_OFFSET:-0}))
+          echo "phase=$PHASE" >> $GITHUB_OUTPUT
 
       - name: Create temporary .sln from .slnx
         run: |
           dotnet new sln -n Fiap.CRM
-          find . -name "*.csproj" -exec dotnet sln Fiap.sln add {} \;
+          find . -name "*.csproj" -exec dotnet sln Fiap.CRM.sln add {} \;
 
       - name: Restore dependencies
         run: dotnet restore Fiap.CRM.sln
