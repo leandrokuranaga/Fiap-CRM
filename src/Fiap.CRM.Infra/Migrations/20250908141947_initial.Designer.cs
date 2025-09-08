@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Fiap.CRM.Infra.Data.Migrations
 {
     [DbContext(typeof(Context))]
-    [Migration("20250810035513_Initial")]
-    partial class Initial
+    [Migration("20250908141947_initial")]
+    partial class initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -43,8 +43,8 @@ namespace Fiap.CRM.Infra.Data.Migrations
 
                     b.Property<string>("Type")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
 
                     b.HasKey("Id");
 
@@ -83,28 +83,28 @@ namespace Fiap.CRM.Infra.Data.Migrations
                         {
                             Id = 1,
                             GameId = 1,
-                            PurchaseDate = new DateTime(2025, 4, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            PurchaseDate = new DateTime(2025, 4, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             UserId = 1
                         },
                         new
                         {
                             Id = 2,
                             GameId = 2,
-                            PurchaseDate = new DateTime(2025, 5, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            PurchaseDate = new DateTime(2025, 5, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             UserId = 2
                         },
                         new
                         {
                             Id = 3,
                             GameId = 3,
-                            PurchaseDate = new DateTime(2025, 6, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            PurchaseDate = new DateTime(2025, 6, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             UserId = 1
                         },
                         new
                         {
                             Id = 4,
                             GameId = 4,
-                            PurchaseDate = new DateTime(2025, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            PurchaseDate = new DateTime(2025, 7, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             UserId = 2
                         });
                 });
@@ -127,9 +127,8 @@ namespace Fiap.CRM.Infra.Data.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
-                    b.Property<string>("TypeUser")
-                        .IsRequired()
-                        .HasColumnType("longtext");
+                    b.Property<int>("TypeUser")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -141,14 +140,14 @@ namespace Fiap.CRM.Infra.Data.Migrations
                             Id = 1,
                             Active = true,
                             Name = "Admin",
-                            TypeUser = "Admin"
+                            TypeUser = 1
                         },
                         new
                         {
                             Id = 2,
                             Active = true,
                             Name = "User",
-                            TypeUser = "User"
+                            TypeUser = 2
                         });
                 });
 

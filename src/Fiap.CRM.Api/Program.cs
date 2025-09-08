@@ -1,13 +1,12 @@
-using System.Diagnostics.CodeAnalysis;
 using Fiap.CRM.Api.Extensions;
 using Fiap.CRM.Api.Middlewares;
 using Fiap.CRM.Infra.CrossCutting.IoC;
-using Fiap.CRM.Infra.Data;
 using Fiap.CRM.Infra.Utils;
 using HealthChecks.ApplicationStatus.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Prometheus;
 using Serilog;
+using System.Diagnostics.CodeAnalysis;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +15,17 @@ builder.Configuration
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true)
     .AddEnvironmentVariables();
+
+#if DEBUG
+builder.Configuration.AddUserSecrets<Program>(optional: true, reloadOnChange: true);
+#endif
+
+builder.Configuration.AddSystemsManager(source =>
+{
+    source.Path = "/myapp/prod";
+    source.Optional = true;
+    source.ReloadAfter = TimeSpan.FromMinutes(5);
+});
 
 builder.Services.AddOptions<ConnectionStrings>()
     .Bind(builder.Configuration.GetSection(nameof(ConnectionStrings)))
@@ -33,7 +43,7 @@ builder.Services.AddCustomMvc();
 
 builder.Services
     .AddHealthChecks()
-    .AddMySql(databaseConnection.DefaultConnection, name: "mysql")
+    .AddMySql(databaseConnection.CRMConnection, name: "mysql")
     .AddApplicationStatus()
     .AddRedis(databaseConnection.RedisConnectionString, name: "redis");
 
