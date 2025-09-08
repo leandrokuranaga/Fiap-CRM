@@ -19,7 +19,7 @@ public class UsersMap : IEntityTypeConfiguration<User>
 
             builder.Property(x => x.TypeUser)
                 .IsRequired()
-                .HasConversion<string>();
+                .HasConversion<int>();
 
             builder.Property(x => x.Active)
                 .IsRequired()

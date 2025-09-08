@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Fiap.CRM.Infra.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class Initial : Migration
+    public partial class initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -22,7 +22,7 @@ namespace Fiap.CRM.Infra.Data.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
-                    Type = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false)
+                    Type = table.Column<string>(type: "varchar(500)", maxLength: 500, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Content = table.Column<string>(type: "longtext", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
@@ -49,8 +49,7 @@ namespace Fiap.CRM.Infra.Data.Migrations
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     PasswordSalt = table.Column<string>(type: "longtext", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    TypeUser = table.Column<string>(type: "longtext", nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    TypeUser = table.Column<int>(type: "int", nullable: false),
                     Active = table.Column<bool>(type: "tinyint(1)", nullable: false, defaultValue: true)
                 },
                 constraints: table =>
@@ -89,8 +88,8 @@ namespace Fiap.CRM.Infra.Data.Migrations
                 columns: new[] { "Id", "Active", "Name", "TypeUser", "Email", "PasswordHash", "PasswordSalt" },
                 values: new object[,]
                 {
-                    { 1, true, "Admin", "Admin", "admin@domain.com", "10000.zC3asvLZv6BQ2X3zcYdnhw==.d4+u5b59o6giayRcfePNPyF4I6nekoRp9bAMUEy3iHc=", "WQ1YZ/OiCeVcusBQ94njtQ==" },
-                    { 2, true, "User", "User", "user@domain.com", "10000.SFG18S5pQd5QgxPtSxwPaw==.MPaE5q4K+T8EROdyuCeTz8SmJv+8q+h+yeN0d9pGUOg=", "J3CYQ56LlZ/D7NXAZBirlA==" }
+                    { 1, true, "Admin", 1, "admin@domain.com", "10000.zC3asvLZv6BQ2X3zcYdnhw==.d4+u5b59o6giayRcfePNPyF4I6nekoRp9bAMUEy3iHc=", "WQ1YZ/OiCeVcusBQ94njtQ==" },
+                    { 2, true, "User", 2, "user@domain.com", "10000.SFG18S5pQd5QgxPtSxwPaw==.MPaE5q4K+T8EROdyuCeTz8SmJv+8q+h+yeN0d9pGUOg=", "J3CYQ56LlZ/D7NXAZBirlA==" }
                 });
 
             migrationBuilder.InsertData(
@@ -98,10 +97,10 @@ namespace Fiap.CRM.Infra.Data.Migrations
                 columns: new[] { "Id", "PriceCurrency", "PricePaid", "GameId", "PurchaseDate", "UserId" },
                 values: new object[,]
                 {
-                    { 1, "USD", 10.00m, 1, new DateTime(2025, 4, 1, 0, 0, 0, 0, DateTimeKind.Utc), 1 },
-                    { 2, "USD", 15.00m, 2, new DateTime(2025, 5, 1, 0, 0, 0, 0, DateTimeKind.Utc), 2 },
-                    { 3, "USD", 20.00m, 3, new DateTime(2025, 6, 1, 0, 0, 0, 0, DateTimeKind.Utc), 1 },
-                    { 4, "USD", 28.99m, 4, new DateTime(2025, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc), 2 }
+                    { 1, "USD", 10.00m, 1, new DateTime(2025, 4, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), 1 },
+                    { 2, "USD", 15.00m, 2, new DateTime(2025, 5, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), 2 },
+                    { 3, "USD", 20.00m, 3, new DateTime(2025, 6, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), 1 },
+                    { 4, "USD", 28.99m, 4, new DateTime(2025, 7, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), 2 }
                 });
 
             migrationBuilder.CreateIndex(

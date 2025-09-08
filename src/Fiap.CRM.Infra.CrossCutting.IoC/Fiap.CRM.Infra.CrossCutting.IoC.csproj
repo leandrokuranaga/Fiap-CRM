@@ -8,23 +8,16 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.19" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.7" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Hybrid" Version="9.8.0" />
     <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="8.0.19" />
     <PackageReference Include="OpenTelemetry.Exporter.Jaeger" Version="1.6.0-rc.1" />
     <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.12.0" />
     <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.12.0" />
     <PackageReference Include="OpenTelemetry.Instrumentation.EntityFrameworkCore" Version="1.12.0-beta.2" />
-    <PackageReference Include="Rebus" Version="8.8.0">
-      <TreatAsUsed>true</TreatAsUsed>
-    </PackageReference>
     <PackageReference Include="Rebus.AmazonSqs" Version="8.0.0">
       <TreatAsUsed>true</TreatAsUsed>
     </PackageReference>
-    <PackageReference Include="Rebus.ServiceProvider" Version="10.5.0" />
-    <PackageReference Include="Serilog" Version="4.3.1-dev-02373" />
-    <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
-    <PackageReference Include="Serilog.Enrichers.Process" Version="3.0.0" />
-    <PackageReference Include="Serilog.Settings.Configuration" Version="9.0.1-dev-02317" />
-    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.1-dev-00953" />
     <PackageReference Include="Serilog.Sinks.Grafana.Loki" Version="8.3.1" />
   </ItemGroup>
 
@@ -32,10 +25,8 @@
     <ProjectReference Include="..\Fiap.Contracts.Events\Fiap.Contracts.Events.csproj" />
     <ProjectReference Include="..\Fiap.CRM.Application\Fiap.CRM.Application.csproj" />
     <ProjectReference Include="..\Fiap.CRM.Domain\Fiap.CRM.Domain.csproj" />
-    <ProjectReference Include="..\Fiap.CRM.Infra.CrossCutting.CacheService\Fiap.CRM.Infra.CrossCutting.CacheService.csproj" />
     <ProjectReference Include="..\Fiap.CRM.Infra.HandleBus\Fiap.CRM.Infra.HandleBus.csproj" />
     <ProjectReference Include="..\Fiap.CRM.Infra.HostedService\Fiap.CRM.Infra.HostedService.csproj" />
-    <ProjectReference Include="..\Fiap.CRM.Infra.Utils\Fiap.CRM.Infra.Utils.csproj" />
     <ProjectReference Include="..\Fiap.CRM.Infra\Fiap.CRM.Infra.Data.csproj" />
   </ItemGroup>
 

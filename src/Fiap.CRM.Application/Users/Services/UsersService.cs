@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using Fiap.Contracts.Events;
 using Fiap.CRM.Application.Common;
 using Fiap.CRM.Application.Users.Models.Request;
 using Fiap.CRM.Application.Users.Models.Response;
@@ -7,7 +8,6 @@ using Fiap.CRM.Domain.OutboxAggregate;
 using Fiap.CRM.Domain.SeedWork;
 using Fiap.CRM.Domain.SeedWork.Enums;
 using Fiap.CRM.Domain.UserAggregate;
-using Fiap.CRM.Domain.UserAggregate.Entities;
 using Fiap.CRM.Domain.UserAggregate.ValueObjects;
 using Fiap.CRM.Infra.CacheService.Services;
 using Microsoft.Extensions.Logging;
@@ -25,46 +25,30 @@ namespace Fiap.CRM.Application.Users.Services;
     {
         public Task<List<UserResponse>> GetAllAsync() => ExecuteAsync(async () =>
         {
-            async Task<IEnumerable<User>> fallbackFunc()
-            {
-                logger.LogInformation("Cache miss for all users. Fetching from database.");
-                var users = await userRepository.GetAllAsync();
-                return users;
-            }
-
-            var cachedUsers = await cache.GetOrSetAsync(EnumCacheTags.AllUsers, fallbackFunc);
-
-            var allUsers = cachedUsers
+            logger.LogInformation("Getting all users directly from database (cache disabled for debug).");
+            var users = await userRepository.GetAllWithLibraryAsync();
+            
+            var allUsers = users
                 .Select(user => (UserResponse)user)
                 .ToList();
 
             return allUsers;
         });
 
-        public Task<UserResponse> GetAsync(int userId) => ExecuteAsync(async () =>
+        public Task<UserResponse> GetAsync(int userId, CancellationToken ct = default) => ExecuteAsync(async () =>
         {
+            logger.LogInformation("Getting user {UserId} directly from database (cache disabled for debug).", userId);
+            var user = await userRepository.GetWithLibraryAsync(userId);
+
             var response = new UserResponse();
-
-            cache.RemoveAsync(EnumCacheTags.UserId(userId));
-
-            var cacheKey = EnumCacheTags.UserId(userId);
-
-            async Task<User> fallbackFunc()
-            {
-                logger.LogInformation("Cache miss for user {UserId}. Fetching from database.", userId);
-                var user = await userRepository.GetWithLibraryAsync(userId);
-                return user;
-            }
-
-            var cachedUser = await cache.GetOrSetAsync(cacheKey, fallbackFunc);
-
-            if (cachedUser is null)
+            
+            if (user is null)
             {
                 notification.AddNotification("Get User", "User not found", NotificationModel.ENotificationType.NotFound);
                 return response;
             }
 
-            response = (UserResponse)cachedUser;
+            response = (UserResponse)user;
 
             return response;
         });
@@ -86,13 +70,13 @@ namespace Fiap.CRM.Application.Users.Services;
 
             var user = (User)request;
 
-
             await unitOfWork.BeginTransactionAsync();
 
             await userRepository.InsertOrUpdateAsync(user);
             await userRepository.SaveChangesAsync();
 
-            var outbox = CreateOutboxMessage("object", user);
+            var createUserEvent = new CreateUserIntegrationEvent(user.Id, user.Name, user.Email.Address, (int)user.TypeUser, user.Active);
+            var outbox = CreateOutboxMessage(createUserEvent);
 
             await outboxRepository.InsertOrUpdateAsync(outbox);
             await outboxRepository.SaveChangesAsync();
@@ -106,13 +90,8 @@ namespace Fiap.CRM.Application.Users.Services;
             return response;
         });
 
-        private OutboxMessage CreateOutboxMessage(string type, object content) => new()
-        {
-            Id = Guid.NewGuid(),
-            Type = type,
-            Content = JsonSerializer.Serialize(content),
-            OccuredOn = DateTime.UtcNow,
-        };
+        private OutboxMessage CreateOutboxMessage<T>(T content) where T : class => 
+            new(typeof(T).AssemblyQualifiedName!, JsonSerializer.Serialize(content), DateTime.UtcNow);
 
         public Task<UserResponse> CreateAdminAsync(CreateUserAdminRequest request) => ExecuteAsync(async () =>
         {
@@ -136,7 +115,8 @@ namespace Fiap.CRM.Application.Users.Services;
             await userRepository.InsertOrUpdateAsync(user);
             await userRepository.SaveChangesAsync();
 
-            var outbox = CreateOutboxMessage("object", user);
+            var createUserEvent = new CreateUserIntegrationEvent(user.Id, user.Name, user.Email.Address, (int)user.TypeUser, user.Active);
+            var outbox = CreateOutboxMessage(createUserEvent);
 
             await outboxRepository.InsertOrUpdateAsync(outbox);
             await outboxRepository.SaveChangesAsync();

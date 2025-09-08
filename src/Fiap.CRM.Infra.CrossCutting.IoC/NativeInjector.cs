@@ -167,8 +167,15 @@ public static class NativeInjector
                 inputQueueAddress: "crm-queue"
             ))
             .Routing(r => r.TypeBased()
-                .Map<AddGameToUserLibraryIntegrationEvent>("crm-queue"))
-            .Options(o => o.RetryStrategy("crm-error", maxDeliveryAttempts: 3)));
+                .Map<AddGameToUserLibraryIntegrationEvent>("crm-queue")
+                .Map<CreateUserIntegrationEvent>("lambda-queue"))
+            .Options(o => 
+            {
+                o.RetryStrategy(maxDeliveryAttempts: 3);
+                o.SetNumberOfWorkers(1);
+                o.SetMaxParallelism(1);
+            })
+            );
 
         return services;
     }

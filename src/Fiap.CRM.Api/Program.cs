@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using Fiap.CRM.Api.Extensions;
 using Fiap.CRM.Api.Middlewares;
 using Fiap.CRM.Infra.CrossCutting.IoC;
@@ -7,6 +6,7 @@ using HealthChecks.ApplicationStatus.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Prometheus;
 using Serilog;
+using System.Diagnostics.CodeAnalysis;
 
 var builder = WebApplication.CreateBuilder(args);
 
