@@ -26,7 +26,6 @@ public class UsersController(IUsersService usersService, INotification notificat
     /// </summary>
     /// <param name="request">The details of the user to create.</param>
     /// <returns>The new user created information.</returns>
-    [AllowAnonymous]
     [HttpPost("create")]
     [SwaggerOperation(
         Summary = "Creates a new regular user.",
@@ -50,7 +49,6 @@ public class UsersController(IUsersService usersService, INotification notificat
     /// </summary>
     /// <param name="request">The details of the user to create (only admin).</param>
     /// <returns>The new user created information.</returns>
-    [Authorize(Roles = "Admin")]
     [HttpPost("create-admin")]
     [SwaggerOperation(
         Summary = "Creates a new user (admin only).",
@@ -80,7 +78,6 @@ public class UsersController(IUsersService usersService, INotification notificat
     /// <param name="id">id of the updated user</param>
     /// <returns>The new user updated information.</returns>
     [HttpPatch("{id:int:min(1)}")]
-    [Authorize(Roles = "Admin")]
     [SwaggerOperation(
         Summary = "Updates an existing user.",
         Description = "Updates the details of an existing user such as name, email, or status. Only accessible by admins. Returns 204 on success, 400 or 404 on failure, and 401/403 if unauthorized."
@@ -108,7 +105,6 @@ public class UsersController(IUsersService usersService, INotification notificat
     /// <param name="id">id of the deleted user</param>
     /// <returns>The deleted user information.</returns>
     [HttpDelete("{id:int:min(1)}")]
-    [Authorize(Roles = "Admin")]
     [SwaggerOperation(
         Summary = "Deletes a user by ID.",
         Description = "Deletes a user from the system based on their ID. Only accessible by admins. Returns 204 on success, or an error if the user is not found or the requester lacks permission."
@@ -136,7 +132,6 @@ public class UsersController(IUsersService usersService, INotification notificat
     /// <param name="id">Gets a user based on the id.</param>
     /// <returns>The user information.</returns>
     [HttpGet("{id:int:min(1)}")]
-    [Authorize(Roles = "Admin")]
     [SwaggerOperation(
         Summary = "Retrieve a user by ID.",
         Description = "Fetches a user's details based on their ID. Only accessible by admins. Returns the user's information on success, or an error if not found or unauthorized."
@@ -161,7 +156,6 @@ public class UsersController(IUsersService usersService, INotification notificat
     /// </summary>
     /// <returns>The list of users information.</returns>
     [HttpGet]
-    [Authorize(Roles = "Admin")]
     [SwaggerOperation(
         Summary = "Retrieve a list of all users.",
         Description = "Returns a list of all registered users. Only accessible by admins. May return an empty list if no users exist. Returns 401/403 if access is unauthorized."

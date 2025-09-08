@@ -14,7 +14,7 @@ public class OutboxMessageMap : IEntityTypeConfiguration<OutboxMessage>
 
         builder.Property(x => x.Type)
             .IsRequired()
-            .HasMaxLength(100);
+            .HasMaxLength(500);
 
         builder.Property(x => x.Content)
             .IsRequired();

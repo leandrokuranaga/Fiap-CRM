@@ -1,5 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using System.Text;
+﻿using Fiap.Contracts.Events;
 using Fiap.CRM.Application.Auth.Services;
 using Fiap.CRM.Application.Users.Services;
 using Fiap.CRM.Domain.OutboxAggregate;
@@ -8,6 +7,7 @@ using Fiap.CRM.Domain.UserAggregate;
 using Fiap.CRM.Infra.CacheService.Services;
 using Fiap.CRM.Infra.Data;
 using Fiap.CRM.Infra.Data.Repositories;
+using Fiap.CRM.Infra.HandleBus.Handlers;
 using Fiap.CRM.Infra.HostedService;
 using Fiap.CRM.Infra.Utils;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -16,16 +16,18 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Rebus.Config;
+using Rebus.Retry.Simple;
 using Rebus.Routing.TypeBased;
 using Serilog;
 using Serilog.Sinks.Grafana.Loki;
 using StackExchange.Redis;
+using System.Diagnostics.CodeAnalysis;
+using System.Text;
 
 namespace Fiap.CRM.Infra.CrossCutting.IoC;
 
@@ -40,6 +42,7 @@ public static class NativeInjector
         AddRedisDatabase(services, configuration);
         AddObservability(services, configuration, services.BuildServiceProvider().GetRequiredService<IWebHostEnvironment>());
         AddDatabase(services, configuration);
+        AddServiceBus(services, configuration);
     }
 
     public static void AddDatabase(this IServiceCollection services, IConfiguration configuration)
@@ -49,7 +52,7 @@ public static class NativeInjector
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
-        var connectionString = configuration.GetConnectionString("DefaultConnection");
+        var connectionString = configuration.GetConnectionString("CRMConnection");
         
         services.AddDbContext<Context>(options =>
             options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 21))));
@@ -73,6 +76,11 @@ public static class NativeInjector
         services.AddScoped<IUsersService, UsersService>();
         services.AddScoped<IAuthService, AuthService>();
         #endregion
+
+        #region Bus Services
+        services.AutoRegisterHandlersFromAssemblyOf<AddGameToUserLibraryHandler>();
+        #endregion
+
     }
 
     public static void AddCustomAuthentication(this IServiceCollection services, IConfiguration configuration)
@@ -152,12 +160,22 @@ public static class NativeInjector
             .ValidateOnStart();
 
         services.AddRebus(configure => configure
-            .Transport(t => t.UseAmazonSQSAsOneWayClient(
+            .Transport(t => t.UseAmazonSQS(
                 accessKeyId: configuration["ServiceBus:AccessKey"],
                 secretAccessKey: configuration["ServiceBus:SecretKey"],
-                regionEndpoint: Amazon.RegionEndpoint.GetBySystemName(configuration["ServiceBus:Region"])))
+                regionEndpoint: Amazon.RegionEndpoint.GetBySystemName(configuration["ServiceBus:Region"]),
+                inputQueueAddress: "crm-queue"
+            ))
             .Routing(r => r.TypeBased()
-                .MapFallback(configuration["ServiceBus:QueueName"])));
+                .Map<AddGameToUserLibraryIntegrationEvent>("crm-queue")
+                .Map<CreateUserIntegrationEvent>("lambda-queue"))
+            .Options(o => 
+            {
+                o.RetryStrategy(maxDeliveryAttempts: 3);
+                o.SetNumberOfWorkers(1);
+                o.SetMaxParallelism(1);
+            })
+            );
 
         return services;
     }
@@ -169,7 +187,7 @@ public static class NativeInjector
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
-        var lokiUri = configuration["Serilog:WriteTo:1:Args:Uri"]; // Ajustar conforme estrutura do appsettings
+        var lokiUri = configuration["Serilog:WriteTo:1:Args:Uri"];
 
         Log.Logger = new LoggerConfiguration()
             .ReadFrom.Configuration(configuration)

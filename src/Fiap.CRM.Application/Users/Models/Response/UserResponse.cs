@@ -1,5 +1,6 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using Fiap.CRM.Domain.UserAggregate;
 using Fiap.CRM.Domain.UserAggregate.Enums;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Fiap.CRM.Application.Users.Models.Response;
 
@@ -11,16 +12,15 @@ public record UserResponse
     public string Email { get; set; }
     public TypeUser Type { get; set; }
     public bool Active { get; set; }
+    public List<int> GameIds { get; set; } = [];
 
-    public static explicit operator UserResponse(Domain.UserAggregate.User user)
+    public static explicit operator UserResponse(User u) => new UserResponse
     {
-        return new UserResponse
-        {
-            UserId = user.Id,
-            Name = user.Name,
-            Email = user.Email.Address,
-            Type = user.TypeUser,
-            Active = user.Active
-        };
-    }
+        UserId = u.Id,
+        Name = u.Name,
+        Email = u.Email.Address,
+        Active = u.Active,
+        Type = u.TypeUser,
+        GameIds = u.LibraryGames?.Select(lg => lg.GameId).ToList() ?? []
+    };
 }  

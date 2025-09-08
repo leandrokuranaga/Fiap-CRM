@@ -9,15 +9,15 @@
     <Project Path="src/Fiap.CRM.Domain/Fiap.CRM.Domain.csproj" />
   </Folder>
   <Folder Name="/4. Infra Layer/">
+    <Project Path="src/Fiap.Contracts.Events/Fiap.Contracts.Events.csproj" Id="5cf95384-71f7-43eb-b521-18a89156d217" />
     <Project Path="src/Fiap.CRM.Infra.CrossCutting.IoC/Fiap.CRM.Infra.CrossCutting.IoC.csproj" />
+    <Project Path="src/Fiap.CRM.Infra.CrossCutting/Fiap.CRM.Infra.CrossCutting.csproj" Id="8ecf3648-e50b-4366-908b-131fee6fe88e" />
+    <Project Path="src/Fiap.CRM.Infra.HandleBus/Fiap.CRM.Infra.HandleBus.csproj" Id="8a243b31-b917-4c25-a4ea-d557b84fb0fb" />
     <Project Path="src/Fiap.CRM.Infra/Fiap.CRM.Infra.Data.csproj" />
-    <Project Path="src\Fiap.CRM.Infra.CrossCutting.CacheService\Fiap.CRM.Infra.CrossCutting.CacheService.csproj" Type="Classic C#" />
-    <Project Path="src\Fiap.CRM.Infra.CrossCutting.Http\Fiap.CRM.Infra.CrossCutting.Http.csproj" Type="Classic C#" />
-    <Project Path="src\Fiap.CRM.Infra.HostedService\Fiap.CRM.Infra.HostedService.csproj" Type="Classic C#" />
-    <Project Path="src\Fiap.CRM.Infra.Utils\Fiap.CRM.Infra.Utils.csproj" Type="Classic C#" />
+    <Project Path="src\Fiap.CRM.Infra.HostedService\Fiap.CRM.Infra.HostedService.csproj" />
   </Folder>
   <Folder Name="/5. Tests Layer/">
     <Project Path="test/Fiap.CRM.Unit.Tests/Fiap.CRM.Unit.Tests.csproj" />
-    <Project Path="test\Fiap.CRM.BDD.Tests\Fiap.CRM.BDD.Tests.csproj" Type="Classic C#" />
+    <Project Path="test\Fiap.CRM.BDD.Tests\Fiap.CRM.BDD.Tests.csproj" />
   </Folder>
 </Solution>

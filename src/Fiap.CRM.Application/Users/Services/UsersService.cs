@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using Fiap.Contracts.Events;
 using Fiap.CRM.Application.Common;
 using Fiap.CRM.Application.Users.Models.Request;
 using Fiap.CRM.Application.Users.Models.Response;
@@ -7,7 +8,6 @@ using Fiap.CRM.Domain.OutboxAggregate;
 using Fiap.CRM.Domain.SeedWork;
 using Fiap.CRM.Domain.SeedWork.Enums;
 using Fiap.CRM.Domain.UserAggregate;
-using Fiap.CRM.Domain.UserAggregate.Entities;
 using Fiap.CRM.Domain.UserAggregate.ValueObjects;
 using Fiap.CRM.Infra.CacheService.Services;
 using Microsoft.Extensions.Logging;
@@ -25,92 +25,78 @@ namespace Fiap.CRM.Application.Users.Services;
     {
         public Task<List<UserResponse>> GetAllAsync() => ExecuteAsync(async () =>
         {
-            Func<Task<IEnumerable<Domain.UserAggregate.User>>> fallbackFunc = async () =>
-            {
-                logger.LogInformation("Cache miss for all users. Fetching from database.");
-                var users = await userRepository.GetAllAsync();
-                return users;
-            };
+            await cache.RemoveAsync(EnumCacheTags.AllUsers);
+            var list = await cache.GetOrSetAsync(
+                EnumCacheTags.AllUsers,
+                async () =>
+                {
+                    var users = await userRepository.GetAllWithLibraryAsync();
+                    return users.Select(u => (UserResponse)u).ToList();
+                });
 
-            var cachedUsers = await cache.GetOrSetAsync(EnumCacheTags.AllUsers, fallbackFunc);
-
-            var allUsers = cachedUsers
-                .Select(user => (UserResponse)user)
-                .ToList();
-
-            return allUsers;
+            return list ?? [];
         });
 
         public Task<UserResponse> GetAsync(int userId) => ExecuteAsync(async () =>
         {
-            var response = new UserResponse();
-
             var cacheKey = EnumCacheTags.UserId(userId);
 
-            async Task<Domain.UserAggregate.User> fallbackFunc()
-            {
-                logger.LogInformation("Cache miss for user {UserId}. Fetching from database.", userId);
-                var user = await userRepository.GetByIdAsync(userId, noTracking: true);
-                return user;
-            }
+            var resp = await cache.GetOrSetAsync(
+                cacheKey,
+                async () =>
+                {
+                    var u = await userRepository.GetWithLibraryAsync(userId);
+                    return u is null ? null : (UserResponse)u;
+                });
 
-            var cachedUser = await cache.GetOrSetAsync(cacheKey, fallbackFunc);
-
-            if (cachedUser == null)
+            if (resp is null)
             {
                 notification.AddNotification("Get User", "User not found", NotificationModel.ENotificationType.NotFound);
-                return response;
+                return new UserResponse();
             }
 
-            response = (UserResponse)cachedUser;
-
-            return response;
+            return resp;
         });
 
         public Task<UserResponse> CreateAsync(CreateUserRequest request) => ExecuteAsync(async () =>
-        {
-            var response = new UserResponse();
-
-            Validate(request, new CreateUserRequestValidator());
-
-            var email = request.Email.Trim().ToLowerInvariant();
-
-            var exists = await userRepository.ExistAsync(u => u.Email.Address == request.Email.ToLower());
-            if (exists)
             {
-                notification.AddNotification("Create User", "Email already registered", NotificationModel.ENotificationType.BusinessRules);
+                var response = new UserResponse();
+
+                Validate(request, new CreateUserRequestValidator());
+
+                var email = request.Email.Trim().ToLowerInvariant();
+
+                var exists = await userRepository.ExistAsync(u => u.Email.Address == request.Email.ToLower());
+                if (exists)
+                {
+                    notification.AddNotification("Create User", "Email already registered", NotificationModel.ENotificationType.BusinessRules);
+                    return response;
+                }
+
+                var user = (User)request;
+
+                await unitOfWork.BeginTransactionAsync();
+
+                await userRepository.InsertOrUpdateAsync(user);
+                await userRepository.SaveChangesAsync();
+
+                var createUserEvent = new CreateUserIntegrationEvent(user.Id, user.Name, user.Email.Address, (int)user.TypeUser, user.Active);
+                var outbox = CreateOutboxMessage(createUserEvent);
+
+                await outboxRepository.InsertOrUpdateAsync(outbox);
+                await outboxRepository.SaveChangesAsync();
+
+                await unitOfWork.CommitAsync();
+
+                await cache.RemoveAsync(EnumCacheTags.AllUsers);
+
+                response = (UserResponse)user;
+
                 return response;
-            }
+            });
 
-            var user = (Domain.UserAggregate.User)request;
-
-
-            await unitOfWork.BeginTransactionAsync();
-
-            await userRepository.InsertOrUpdateAsync(user);
-            await userRepository.SaveChangesAsync();
-
-            var outbox = CreateOutboxMessage("object", user);
-
-            await outboxRepository.InsertOrUpdateAsync(outbox);
-            await outboxRepository.SaveChangesAsync();
-
-            await unitOfWork.CommitAsync();
-
-            await cache.RemoveAsync(EnumCacheTags.AllUsers);
-
-            response = (UserResponse)user;
-
-            return response;
-        });
-
-        private OutboxMessage CreateOutboxMessage(string type, object content) => new()
-        {
-            Id = Guid.NewGuid(),
-            Type = type,
-            Content = JsonSerializer.Serialize(content),
-            OccuredOn = DateTime.UtcNow,
-        };
+        private OutboxMessage CreateOutboxMessage<T>(T content) where T : class => 
+            new(typeof(T).AssemblyQualifiedName!, JsonSerializer.Serialize(content), DateTime.UtcNow);
 
         public Task<UserResponse> CreateAdminAsync(CreateUserAdminRequest request) => ExecuteAsync(async () =>
         {
@@ -127,15 +113,15 @@ namespace Fiap.CRM.Application.Users.Services;
                 return response;
             }
 
-            var user = (Domain.UserAggregate.User)request;
-
+            var user = (User)request;
 
             await unitOfWork.BeginTransactionAsync();
 
             await userRepository.InsertOrUpdateAsync(user);
             await userRepository.SaveChangesAsync();
 
-            var outbox = CreateOutboxMessage("object", user);
+            var createUserEvent = new CreateUserIntegrationEvent(user.Id, user.Name, user.Email.Address, (int)user.TypeUser, user.Active);
+            var outbox = CreateOutboxMessage(createUserEvent);
 
             await outboxRepository.InsertOrUpdateAsync(outbox);
             await outboxRepository.SaveChangesAsync();
@@ -156,7 +142,7 @@ namespace Fiap.CRM.Application.Users.Services;
 
             var user = await userRepository.GetByIdAsync(id, noTracking: true);
 
-            if (user == null)
+            if (user is null)
             {
                 notification.AddNotification("Update User", "User not found", NotificationModel.ENotificationType.NotFound);
                 return BaseResponse<object>.Fail(notification.NotificationModel);
@@ -172,7 +158,7 @@ namespace Fiap.CRM.Application.Users.Services;
             return BaseResponse<object>.Ok(null);
         });
 
-        private void UpdateUserProperties(Domain.UserAggregate.User user, UpdateUserRequest request)
+        private void UpdateUserProperties(User user, UpdateUserRequest request)
         {
             user.Name = request.Name ?? user.Name;
             user.Email = new Email(request.Email ?? user.Email.Address);
@@ -187,7 +173,7 @@ namespace Fiap.CRM.Application.Users.Services;
         {
             var user = await userRepository.GetByIdAsync(id, noTracking: true);
 
-            if (user == null)
+            if (user is null)
             {
                 notification.AddNotification("Delete User", "User Not found", NotificationModel.ENotificationType.NotFound);
                 return BaseResponse<object>.Fail(notification.NotificationModel);
