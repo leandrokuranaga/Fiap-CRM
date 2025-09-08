@@ -21,10 +21,6 @@ public class LibraryGamesMap : IEntityTypeConfiguration<LibraryGame>
             .HasDatabaseName("IX_LibraryGames_UserId");
 
         builder.Property(x => x.PurchaseDate)
-            .HasConversion(
-                v => v.Value,
-                v => new UtcDate(v) 
-            )
             .IsRequired();
 
         builder.OwnsOne(x => x.PricePaid, price =>

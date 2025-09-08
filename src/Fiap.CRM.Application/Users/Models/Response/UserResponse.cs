@@ -11,6 +11,8 @@ public record UserResponse
     public string Email { get; set; }
     public TypeUser Type { get; set; }
     public bool Active { get; set; }
+    public List<int> LibraryGameIds { get; set; } = [];
+    public List<int> GameIds { get; set; } = [];
 
     public static explicit operator UserResponse(Domain.UserAggregate.User user)
     {
@@ -20,7 +22,9 @@ public record UserResponse
             Name = user.Name,
             Email = user.Email.Address,
             Type = user.TypeUser,
-            Active = user.Active
+            Active = user.Active,
+            LibraryGameIds = user.LibraryGames.Select(lg => lg.GameId).ToList(),
+            GameIds = user.LibraryGames.Select(lg => lg.GameId).ToList()
         };
     }
 }  

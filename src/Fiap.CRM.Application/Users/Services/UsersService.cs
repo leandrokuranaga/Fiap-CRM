@@ -25,12 +25,12 @@ namespace Fiap.CRM.Application.Users.Services;
     {
         public Task<List<UserResponse>> GetAllAsync() => ExecuteAsync(async () =>
         {
-            Func<Task<IEnumerable<Domain.UserAggregate.User>>> fallbackFunc = async () =>
+            async Task<IEnumerable<User>> fallbackFunc()
             {
                 logger.LogInformation("Cache miss for all users. Fetching from database.");
                 var users = await userRepository.GetAllAsync();
                 return users;
-            };
+            }
 
             var cachedUsers = await cache.GetOrSetAsync(EnumCacheTags.AllUsers, fallbackFunc);
 
@@ -45,18 +45,20 @@ namespace Fiap.CRM.Application.Users.Services;
         {
             var response = new UserResponse();
 
+            cache.RemoveAsync(EnumCacheTags.UserId(userId));
+
             var cacheKey = EnumCacheTags.UserId(userId);
 
-            async Task<Domain.UserAggregate.User> fallbackFunc()
+            async Task<User> fallbackFunc()
             {
                 logger.LogInformation("Cache miss for user {UserId}. Fetching from database.", userId);
-                var user = await userRepository.GetByIdAsync(userId, noTracking: true);
+                var user = await userRepository.GetWithLibraryAsync(userId);
                 return user;
             }
 
             var cachedUser = await cache.GetOrSetAsync(cacheKey, fallbackFunc);
 
-            if (cachedUser == null)
+            if (cachedUser is null)
             {
                 notification.AddNotification("Get User", "User not found", NotificationModel.ENotificationType.NotFound);
                 return response;
@@ -82,7 +84,7 @@ namespace Fiap.CRM.Application.Users.Services;
                 return response;
             }
 
-            var user = (Domain.UserAggregate.User)request;
+            var user = (User)request;
 
 
             await unitOfWork.BeginTransactionAsync();
@@ -127,8 +129,7 @@ namespace Fiap.CRM.Application.Users.Services;
                 return response;
             }
 
-            var user = (Domain.UserAggregate.User)request;
-
+            var user = (User)request;
 
             await unitOfWork.BeginTransactionAsync();
 
@@ -156,7 +157,7 @@ namespace Fiap.CRM.Application.Users.Services;
 
             var user = await userRepository.GetByIdAsync(id, noTracking: true);
 
-            if (user == null)
+            if (user is null)
             {
                 notification.AddNotification("Update User", "User not found", NotificationModel.ENotificationType.NotFound);
                 return BaseResponse<object>.Fail(notification.NotificationModel);
@@ -172,7 +173,7 @@ namespace Fiap.CRM.Application.Users.Services;
             return BaseResponse<object>.Ok(null);
         });
 
-        private void UpdateUserProperties(Domain.UserAggregate.User user, UpdateUserRequest request)
+        private void UpdateUserProperties(User user, UpdateUserRequest request)
         {
             user.Name = request.Name ?? user.Name;
             user.Email = new Email(request.Email ?? user.Email.Address);
@@ -187,7 +188,7 @@ namespace Fiap.CRM.Application.Users.Services;
         {
             var user = await userRepository.GetByIdAsync(id, noTracking: true);
 
-            if (user == null)
+            if (user is null)
             {
                 notification.AddNotification("Delete User", "User Not found", NotificationModel.ENotificationType.NotFound);
                 return BaseResponse<object>.Fail(notification.NotificationModel);

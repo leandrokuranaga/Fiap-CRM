@@ -1,13 +1,12 @@
 ﻿using System.Text.Json.Serialization;
 using Abp.Domain.Entities;
-using Abp.Events.Bus;
 using Fiap.CRM.Domain.UserAggregate.Entities;
 using Fiap.CRM.Domain.UserAggregate.Enums;
 using Fiap.CRM.Domain.UserAggregate.ValueObjects;
 
 namespace Fiap.CRM.Domain.UserAggregate;
 
-public class User : Entity, IAggregateRoot
+public class User : Entity, SeedWork.IAggregateRoot
 {
     public User()
     {
@@ -29,6 +28,7 @@ public class User : Entity, IAggregateRoot
     public Password Password { get; set; }
     public TypeUser TypeUser { get; set; }
     public bool Active { get; set; }
+    [JsonIgnore]
     public ICollection<LibraryGame> LibraryGames { get; set; } = [];
 
     public static User CreateByAdmin(string name, string email, string password, TypeUser typeUser, bool active)
@@ -41,5 +41,14 @@ public class User : Entity, IAggregateRoot
         return new User(name, email, password, TypeUser.User, true);
     }
 
-    public ICollection<IEventData> DomainEvents { get; }
+    public bool HasGame(int gameId) => LibraryGames.Any(x => x.GameId == gameId);
+
+    public void AddGameToLibrary(int gameId, DateTime purchaseDate, decimal pricePaid)
+    {
+        if (HasGame(gameId)) return;
+
+        var lg = LibraryGame.Create(userId: this.Id, gameId, purchaseDate, pricePaid);
+        LibraryGames.Add(lg);
+    }
+
 }

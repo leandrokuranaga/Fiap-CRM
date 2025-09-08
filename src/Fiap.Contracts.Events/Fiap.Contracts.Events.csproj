@@ -1,0 +1,12 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+	<AssemblyName>Fiap.Contracts.Events</AssemblyName>
+	<RootNamespace>Fiap.Contracts.Events</RootNamespace>
+	<Version>1.0.0</Version>	  
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>
