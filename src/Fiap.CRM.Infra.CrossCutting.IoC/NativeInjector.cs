@@ -164,11 +164,11 @@ public static class NativeInjector
                 accessKeyId: configuration["ServiceBus:AccessKey"],
                 secretAccessKey: configuration["ServiceBus:SecretKey"],
                 regionEndpoint: Amazon.RegionEndpoint.GetBySystemName(configuration["ServiceBus:Region"]),
-                inputQueueAddress: "crm-queue"
+                inputQueueAddress: configuration["ServiceBus:CRMQueueName"]
             ))
             .Routing(r => r.TypeBased()
-                .Map<AddGameToUserLibraryIntegrationEvent>("crm-queue")
-                .Map<CreateUserIntegrationEvent>("lambda-queue"))
+                .Map<AddGameToUserLibraryIntegrationEvent>(configuration["ServiceBus:CRMQueueName"])
+                .Map<CreateUserIntegrationEvent>(configuration["ServiceBus:LambdaQueueName"]))
             .Options(o => 
             {
                 o.RetryStrategy(maxDeliveryAttempts: 3);

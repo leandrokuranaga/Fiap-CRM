@@ -58,19 +58,12 @@ public class OutboxProcessorService(
                 logger.LogWarning("Failed to deserialize content for outbox message {OutboxId}.", msg.Id);
                 continue;
             }
-            try
-            {
-                await bus.Advanced.Routing.Send(configuration["ServiceBus:LambdaQueueName"], eventMessage);
-                msg.ProcessedOn = DateTime.UtcNow;
-            }
-            catch(Exception e)
-            {
 
-            }
-
+            await bus.Advanced.Routing.Send(configuration["ServiceBus:LambdaQueueName"], eventMessage);
+            msg.ProcessedOn = DateTime.UtcNow;
         }
 
-        if (outboxes.Count() > 0)
+        if (outboxes.Any())
             await outboxRepository.SaveChangesAsync();
     }
 }
