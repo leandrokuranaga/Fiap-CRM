@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 namespace Fiap.CRM.Infra.CrossCutting.Http.Keycloak.Service
 {
     public class KeycloakService : IKeycloakService
+
     {
         private readonly HttpClient _http;
         private readonly ILogger<KeycloakService> _logger;
@@ -28,13 +29,13 @@ namespace Fiap.CRM.Infra.CrossCutting.Http.Keycloak.Service
             _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
 
             if (string.IsNullOrEmpty(_options.AuthorityHost))
-                throw new ArgumentNullException(nameof(_options.AuthorityHost), "AuthorityHost do Keycloak não pode ser nulo");
+                throw new ArgumentNullException(nameof(_options.AuthorityHost), "Keycloak's AuthorityHost cannot be null");
             if (string.IsNullOrEmpty(_options.Realm))
-                throw new ArgumentNullException(nameof(_options.Realm), "Realm do Keycloak não pode ser nulo");
+                throw new ArgumentNullException(nameof(_options.Realm), "Keycloak's Realm cannot be null");
             if (string.IsNullOrEmpty(_options.ClientId))
-                throw new ArgumentNullException(nameof(_options.ClientId), "ClientId do Keycloak não pode ser nulo");
+                throw new ArgumentNullException(nameof(_options.ClientId), "Keycloak ClientId cannot be null");
             if (string.IsNullOrEmpty(_options.ClientSecret))
-                throw new ArgumentNullException(nameof(_options.ClientSecret), "ClientSecret do Keycloak não pode ser nulo");
+                throw new ArgumentNullException(nameof(_options.ClientSecret), "Keycloak's ClientSecret cannot be null");
         }
 
         private async Task<string> GetAdminTokenAsync()
@@ -85,7 +86,7 @@ namespace Fiap.CRM.Infra.CrossCutting.Http.Keycloak.Service
             }
             catch (HttpRequestException ex)
             {
-                _logger.LogError(ex, "Falha ao obter token de usuário {Username}. Status: {Status}", username, ex.StatusCode);
+                _logger.LogError(ex, "Failed to get user token {Username}. Status: {Status}", username, ex.StatusCode);
                 return null;
             }
         }
@@ -106,8 +107,9 @@ namespace Fiap.CRM.Infra.CrossCutting.Http.Keycloak.Service
             return request;
         }
 
-        public async Task<bool> CreateUserAsync(string email, string name, string password, string role)
+        public async Task<bool> CreateUserAsync(string email, string name, string lastName, string password, string role)
         {
+            
             var url = $"{_options.AuthorityHost}/admin/realms/{_options.Realm}/users";
 
             var userPayload = new
@@ -115,6 +117,7 @@ namespace Fiap.CRM.Infra.CrossCutting.Http.Keycloak.Service
                 username = email,
                 email,
                 firstName = name,
+                lastName = lastName,
                 enabled = true,
                 emailVerified = true,
                 credentials = new[]
@@ -132,14 +135,14 @@ namespace Fiap.CRM.Infra.CrossCutting.Http.Keycloak.Service
 
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogError("Erro ao criar usuário {Email}: {Status}", email, response.StatusCode);
+                _logger.LogError("Error creating user {Email}: {Status}", email, response.StatusCode);
                 return false;
             }
 
             var location = response.Headers.Location?.ToString();
             if (string.IsNullOrEmpty(location))
             {
-                _logger.LogWarning("Usuário criado, mas Location header ausente. Role não será atribuída.");
+                _logger.LogWarning("User created, but Location header missing. Role will not be assigned.");
                 return true;
             }
 
@@ -152,7 +155,7 @@ namespace Fiap.CRM.Infra.CrossCutting.Http.Keycloak.Service
 
                 if (!roleResponse.IsSuccessStatusCode)
                 {
-                    _logger.LogError("Erro ao buscar role {Role}: {Status}", role, roleResponse.StatusCode);
+                    _logger.LogError("Error when searching for role {Role}: {Status}", role, roleResponse.StatusCode);
                     return false;
                 }
 
@@ -166,7 +169,74 @@ namespace Fiap.CRM.Infra.CrossCutting.Http.Keycloak.Service
 
                 if (!assignResponse.IsSuccessStatusCode)
                 {
-                    _logger.LogError("Erro ao atribuir role {Role} para usuário {Email}: {Status}", role, email, assignResponse.StatusCode);
+                    _logger.LogError("Error assigning role {Role} to user {Email}: {Status}", role, email, assignResponse.StatusCode);
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        public async Task<bool> UpdateUserAsync(string oldEmail, string newEmail, string newName, string? newPassword)
+        {
+           
+            var url = $"{_options.AuthorityHost}/admin/realms/{_options.Realm}/users?email={oldEmail}";
+            var request = await CreateRequestAsync(HttpMethod.Get, url);
+
+            var response = await _http.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError("Error when searching for user {Email}: {Status}", oldEmail, response.StatusCode);
+                return false;
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+            var users = JsonSerializer.Deserialize<List<JsonElement>>(content);
+
+            if (users is null || users.Count == 0)
+            {
+                _logger.LogWarning("User with email {Email} not found", oldEmail);
+                return false;
+            }
+
+            var userId = users[0].GetProperty("id").GetString();
+
+           
+            var userUpdatePayload = new
+            {
+                username = newEmail,
+                email = newEmail,
+                firstName = newName,
+                enabled = true 
+            };
+
+            var updateUrl = $"{_options.AuthorityHost}/admin/realms/{_options.Realm}/users/{userId}";
+            var updateRequest = await CreateRequestAsync(HttpMethod.Put, updateUrl, userUpdatePayload);
+
+            var updateResponse = await _http.SendAsync(updateRequest);
+            if (!updateResponse.IsSuccessStatusCode)
+            {
+                var errorContent = await updateResponse.Content.ReadAsStringAsync();
+                _logger.LogError("Erro atualizando usuário: {StatusCode}. Detalhes da API do Keycloak: {ErrorContent}", updateResponse.StatusCode, errorContent);
+                return false;
+            }
+
+            if (!string.IsNullOrEmpty(newPassword))
+            {
+                var passwordPayload = new
+                {
+                    type = "password",
+                    value = newPassword,
+                    temporary = false
+                };
+
+                var passwordUrl = $"{_options.AuthorityHost}/admin/realms/{_options.Realm}/users/{userId}/reset-password";
+                var passwordRequest = await CreateRequestAsync(HttpMethod.Put, passwordUrl, passwordPayload);
+
+                var passwordResponse = await _http.SendAsync(passwordRequest);
+                if (!passwordResponse.IsSuccessStatusCode)
+                {
+                    _logger.LogError("Error updating user password for {Email}: {Status}", newEmail, passwordResponse.StatusCode);
                     return false;
                 }
             }
@@ -182,16 +252,16 @@ namespace Fiap.CRM.Infra.CrossCutting.Http.Keycloak.Service
             var response = await _http.SendAsync(request);
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogError("Erro ao buscar usuário {Email}: {Status}", email, response.StatusCode);
+                _logger.LogError("Error when searching for user {Email}: {Status}", email, response.StatusCode);
                 return false;
             }
 
             var content = await response.Content.ReadAsStringAsync();
             var users = JsonSerializer.Deserialize<List<JsonElement>>(content);
 
-            if (users == null || users.Count == 0)
+            if (users is null || users.Count == 0)
             {
-                _logger.LogWarning("Usuário com email {Email} não encontrado", email);
+                _logger.LogWarning("User with email {Email} not found", email);
                 return false;
             }
 
@@ -204,7 +274,7 @@ namespace Fiap.CRM.Infra.CrossCutting.Http.Keycloak.Service
 
             if (!deleteResponse.IsSuccessStatusCode)
             {
-                _logger.LogError("Erro ao deletar usuário {Email}: {Status}", email, deleteResponse.StatusCode);
+                _logger.LogError("Error deleting user {Email}: {Status}", email, deleteResponse.StatusCode);
                 return false;
             }
 

@@ -116,9 +116,7 @@ public static class NativeInjector
     }
 
     public static void AddCustomAuthentication(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment environment)
-    {
-
-        // Vincula as configurações à classe KeycloakSettings
+    {       
         var keycloakSettings = new KeycloakSettings();
         configuration.GetSection(KeycloakSettings.SectionName).Bind(keycloakSettings);
         services.AddSingleton(keycloakSettings);
@@ -129,10 +127,10 @@ public static class NativeInjector
             options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
         })
         .AddJwtBearer(options =>
-        {           
+        {
             options.Authority = keycloakSettings.Authority;
             options.Audience = keycloakSettings.Audience;
-            
+
             options.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidAudience = keycloakSettings.Audience,
@@ -144,60 +142,10 @@ public static class NativeInjector
                 options.RequireHttpsMetadata = false;
             }
 
-            
-            options.Events = new JwtBearerEvents
-            {
-                OnTokenValidated = context =>
-                {
-                    
-                    if (context.Principal?.Identity is ClaimsIdentity claimsIdentity)
-                    {
-                      
-                        var realmAccessClaim = context.Principal.FindFirst("realm_access");
-                        var resourceAccessClaim = context.Principal.FindFirst("resource_access");
-
-                        
-                        if (realmAccessClaim != null && realmAccessClaim.Value.Length > 0)
-                        {
-                            var realmAccess = System.Text.Json.JsonDocument.Parse(realmAccessClaim.Value);
-                            if (realmAccess.RootElement.TryGetProperty("roles", out var roles))
-                            {
-                                foreach (var role in roles.EnumerateArray())
-                                {
-                                    var roleName = role.GetString();
-                                    if (!string.IsNullOrEmpty(roleName))
-                                    {
-                                        claimsIdentity.AddClaim(new Claim(ClaimTypes.Role, roleName));
-                                    }
-                                }
-                            }
-                        }
-                        
-                        if (resourceAccessClaim != null && resourceAccessClaim.Value.Length > 0)
-                        {
-                            var resourceAccess = System.Text.Json.JsonDocument.Parse(resourceAccessClaim.Value);
-                           
-                            if (resourceAccess.RootElement.TryGetProperty(keycloakSettings.Audience, out var clientRolesElement))
-                            {
-                                if (clientRolesElement.TryGetProperty("roles", out var roles))
-                                {
-                                    foreach (var role in roles.EnumerateArray())
-                                    {
-                                        var roleName = role.GetString();
-                                        if (!string.IsNullOrEmpty(roleName))
-                                        {
-                                            claimsIdentity.AddClaim(new Claim(ClaimTypes.Role, roleName));
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    return Task.CompletedTask;
-                }
-            };
+            options.Events = JwtEventsFactory.CreateJwtBearerEvents(keycloakSettings.Audience);
         });
     }
+
 
     public static void AddRedisDatabase(this IServiceCollection services, IConfiguration configuration)
     {

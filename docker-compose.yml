@@ -20,6 +20,21 @@ services:
     networks:
       - fiap-network
 
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.3.3
+    container_name: keycloak
+    ports:
+      - "8080:8080"   
+    environment:
+      - KC_BOOTSTRAP_ADMIN_USERNAME=admin
+      - KC_BOOTSTRAP_ADMIN_PASSWORD=admin
+      - KC_DB=dev-mem
+    command: ["start-dev"]
+    networks:
+      - fiap-network
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+
   db:
     image: postgres:latest
     container_name: fiap-db
@@ -107,6 +122,7 @@ services:
     networks:
       - fiap-network
 
+<<<<<<< HEAD
   keycloak:
     image: quay.io/keycloak/keycloak:23.0.7
     container_name: keycloak
@@ -124,6 +140,9 @@ services:
       - db
     networks:
       - fiap-network
+=======
+
+>>>>>>> ad57b45 (#Finalizado)
 
 volumes:
   pgdata:
