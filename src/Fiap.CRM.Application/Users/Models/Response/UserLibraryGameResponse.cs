@@ -20,10 +20,10 @@ namespace Fiap.CRM.Application.Users.Models.Response
             return new UserLibraryGameResponse
             {
                 GameId = libraryGame.GameId,
-                Name = "Unknown", // Será preenchido quando os dados do jogo estiverem disponíveis
-                Genre = "Unknown", // Será preenchido quando os dados do jogo estiverem disponíveis
-                OriginalPrice = 0, // Será preenchido quando os dados do jogo estiverem disponíveis
-                OriginalCurrency = "BRL", // Padrão
+                Name = "", 
+                Genre = "",
+                OriginalPrice = 0,
+                OriginalCurrency = "BRL",
                 PricePaid = libraryGame.PricePaid.Value,
                 PurchaseCurrency = libraryGame.PricePaid.Currency,
                 PurchaseDate = libraryGame.PurchaseDate

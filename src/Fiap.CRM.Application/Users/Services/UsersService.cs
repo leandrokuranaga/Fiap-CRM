@@ -235,7 +235,7 @@ namespace Fiap.CRM.Application.Users.Services;
 
         var cachedUserGames = await cache.GetOrSetAsync(cacheKey, fallbackFunc);
 
-        if (cachedUserGames is null || !cachedUserGames.Any())
+        if (cachedUserGames is null || cachedUserGames.Count == 0)
         {
             notification.AddNotification("Get User", "User not found or has no games", NotificationModel.ENotificationType.NotFound);
             return [];
