@@ -17,7 +17,7 @@
     <Project Path="src\Fiap.CRM.Infra.HostedService\Fiap.CRM.Infra.HostedService.csproj" />
   </Folder>
   <Folder Name="/5. Tests Layer/">
+    <Project Path="test/Fiap.CRM.BDD.Tests/Fiap.CRM.BDD.Tests/Fiap.CRM.BDD.Tests.csproj" Id="0efdf2cb-c87a-4c3e-b033-730f34d0c0dd" />
     <Project Path="test/Fiap.CRM.Unit.Tests/Fiap.CRM.Unit.Tests.csproj" />
-    <Project Path="test\Fiap.CRM.BDD.Tests\Fiap.CRM.BDD.Tests.csproj" />
   </Folder>
 </Solution>

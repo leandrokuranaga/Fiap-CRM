@@ -14,7 +14,7 @@ namespace Fiap.CRM.Domain.UserAggregate.ValueObjects;
         private const int SaltSize = 16;
         private const int Iterations = 10000;
 
-        protected Password()
+        public Password()
         {
         }
 
