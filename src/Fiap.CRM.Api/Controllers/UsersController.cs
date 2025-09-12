@@ -172,4 +172,27 @@ public class UsersController(IUsersService usersService, INotification notificat
         var result = await usersService.GetAllAsync();
         return Response(BaseResponse<List<UserResponse>>.Ok(result));
     }
+
+    /// <summary>
+    /// Retrieve the logged-in user's game library.
+    /// </summary>
+    /// <returns>A response containing a library of games from the logged in user</returns>
+    [HttpGet("users-games")]
+    [SwaggerOperation(
+        Summary = "Retrieve the logged-in user's game library.",
+        Description = "Returns a list of all games associated with the currently authenticated user. Accessible by both regular users and admins. Returns 404 if no data is found, or 401 if the user is not logged in."
+    )]
+    [ProducesResponseType(typeof(SuccessResponse<List<UserLibraryGameResponse>>), (int)HttpStatusCode.OK)]
+    [ProducesResponseType(typeof(BaseResponse<object>), StatusCodes.Status404NotFound)]
+    [SwaggerResponseExample(StatusCodes.Status404NotFound, typeof(GenericErrorNotFoundExample))]
+    [ProducesResponseType(typeof(BaseResponse<object>), StatusCodes.Status401Unauthorized)]
+    [SwaggerResponseExample(StatusCodes.Status401Unauthorized, typeof(GenericErrorUnauthorizedExample))]
+    [ProducesResponseType(typeof(BaseResponse<object>), StatusCodes.Status500InternalServerError)]
+    [SwaggerResponseExample(StatusCodes.Status500InternalServerError, typeof(GenericErrorInternalServerExample))]
+    public async Task<IActionResult> GetGamesByUserAsync()
+    {
+        var id = GetLoggedUser();
+        var result = await usersService.GetGamesByUserAsync(id);
+        return Response(BaseResponse<List<UserLibraryGameResponse>>.Ok(result));
+    }
 }

@@ -5,6 +5,7 @@ using Fiap.CRM.Domain.OutboxAggregate;
 using Fiap.CRM.Domain.SeedWork;
 using Fiap.CRM.Domain.UserAggregate;
 using Fiap.CRM.Infra.CacheService.Services;
+using Fiap.CRM.Infra.CrossCutting.Http.FCG;
 using Fiap.CRM.Infra.Data;
 using Fiap.CRM.Infra.Data.Repositories;
 using Fiap.CRM.Infra.HandleBus.Handlers;
@@ -23,6 +24,7 @@ using OpenTelemetry.Trace;
 using Rebus.Config;
 using Rebus.Retry.Simple;
 using Rebus.Routing.TypeBased;
+using Refit;
 using Serilog;
 using Serilog.Sinks.Grafana.Loki;
 using StackExchange.Redis;
@@ -58,7 +60,14 @@ public static class NativeInjector
             options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 21))));
     }
 
-    public static void AddLocalHttpClients(this IServiceCollection services, IConfiguration configuration) { }
+    public static void AddLocalHttpClients(this IServiceCollection services, IConfiguration configuration) 
+    {
+        var urlFCG = configuration["ExternalServices:FCGUrl"];
+
+        services
+            .AddRefitClient<IFCGService>()
+            .ConfigureHttpClient(c => c.BaseAddress = new Uri(urlFCG));
+    }
 
     public static void AddLocalServices(this IServiceCollection services, IConfiguration configuration)
     {
