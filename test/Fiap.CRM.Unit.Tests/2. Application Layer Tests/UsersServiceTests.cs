@@ -10,6 +10,7 @@ using Fiap.CRM.Domain.UserAggregate.Enums;
 using Fiap.CRM.Infra.CacheService.Services;
 using Fiap.CRM.Infra.CrossCutting.Http.FCG;
 using Fiap.CRM.Infra.CrossCutting.Http.FCG.Models;
+using Fiap.CRM.Infra.CrossCutting.Keycloak;
 using Microsoft.Extensions.Logging;
 using Moq;
 using System.Linq.Expressions;
@@ -25,6 +26,7 @@ namespace Fiap.CRM.Unit.Tests._2._Application_Layer_Tests
         private readonly Mock<IOutboxRepository> _mockOutboxRepository;
         private readonly Mock<IFCGService> _mockFcgService;
         private readonly Mock<ILogger<UsersService>> _mockLogger;
+        private readonly Mock<IKeycloakService> _mockKeycloakService;
         private readonly UsersService _usersService;
 
         public UsersServiceTests()
@@ -35,7 +37,9 @@ namespace Fiap.CRM.Unit.Tests._2._Application_Layer_Tests
             _mockCache = new Mock<ICacheService>();
             _mockOutboxRepository = new Mock<IOutboxRepository>();
             _mockFcgService = new Mock<IFCGService>();
+            _mockKeycloakService = new Mock<IKeycloakService>();
             _mockLogger = new Mock<ILogger<UsersService>>();
+       
 
             _usersService = new UsersService(
                 _mockNotification.Object,
@@ -44,7 +48,9 @@ namespace Fiap.CRM.Unit.Tests._2._Application_Layer_Tests
                 _mockCache.Object,
                 _mockOutboxRepository.Object,
                 _mockFcgService.Object,
+                _mockKeycloakService.Object,
                 _mockLogger.Object
+
             );
         }
 

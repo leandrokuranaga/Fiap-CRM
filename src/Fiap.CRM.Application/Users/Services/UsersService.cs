@@ -7,10 +7,10 @@ using Fiap.CRM.Domain.OutboxAggregate;
 using Fiap.CRM.Domain.SeedWork;
 using Fiap.CRM.Domain.SeedWork.Enums;
 using Fiap.CRM.Domain.UserAggregate;
-using Fiap.CRM.Domain.UserAggregate.Entities;
 using Fiap.CRM.Domain.UserAggregate.ValueObjects;
 using Fiap.CRM.Infra.CacheService.Services;
 using Fiap.CRM.Infra.CrossCutting.Http.FCG;
+using Fiap.CRM.Infra.CrossCutting.Keycloak;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 
@@ -23,6 +23,7 @@ namespace Fiap.CRM.Application.Users.Services;
         ICacheService cache,
         IOutboxRepository outboxRepository,
         IFCGService fcgService,
+        IKeycloakService keycloakService,
         ILogger<UsersService> logger
         ) : BaseService(notification), IUsersService
 {
@@ -62,41 +63,51 @@ namespace Fiap.CRM.Application.Users.Services;
     });
 
     public Task<UserResponse> CreateAsync(CreateUserRequest request) => ExecuteAsync(async () =>
+    {
+        var response = new UserResponse();
+
+        Validate(request, new CreateUserRequestValidator());
+
+        var email = request.Email.Trim().ToLowerInvariant();
+
+        var exists = await userRepository.ExistAsync(u => u.Email.Address == request.Email.ToLower());
+        if (exists)
         {
-            var response = new UserResponse();
-
-            Validate(request, new CreateUserRequestValidator());
-
-            var email = request.Email.Trim().ToLowerInvariant();
-
-            var exists = await userRepository.ExistAsync(u => u.Email.Address == request.Email.ToLower());
-            if (exists)
-            {
-                notification.AddNotification("Create User", "Email already registered", NotificationModel.ENotificationType.BusinessRules);
-                return response;
-            }
-
-            var user = (User)request;
-
-            await unitOfWork.BeginTransactionAsync();
-
-            await userRepository.InsertOrUpdateAsync(user);
-            await userRepository.SaveChangesAsync();
-
-            var createUserEvent = new CreateUserIntegrationEvent(user.Id, user.Name, user.Email.Address, (int)user.TypeUser, user.Active);
-            var outbox = CreateOutboxMessage(createUserEvent);
-
-            await outboxRepository.InsertOrUpdateAsync(outbox);
-            await outboxRepository.SaveChangesAsync();
-
-            await unitOfWork.CommitAsync();
-
-            await cache.RemoveAsync(EnumCacheTags.AllUsers);
-
-            response = (UserResponse)user;
-
+            notification.AddNotification("Create User", "Email already registered", NotificationModel.ENotificationType.BusinessRules);
             return response;
-        });
+        }
+
+        var user = (User)request;
+
+        await unitOfWork.BeginTransactionAsync();
+
+        await userRepository.InsertOrUpdateAsync(user);
+        await userRepository.SaveChangesAsync();
+
+        (string name, string lastName) = SplitName(user.Name);
+
+        var kcResult = await keycloakService.CreateUserAsync(user.Email.Address, name, lastName, request.Password, user.TypeUser.ToString());
+        if (!kcResult)
+        {
+            notification.AddNotification("Keycloak", "Error creating user in Keycloak", NotificationModel.ENotificationType.BusinessRules);
+            await unitOfWork.RollbackAsync();
+            return response;
+        }
+
+        var createUserEvent = new CreateUserIntegrationEvent(user.Id, user.Name, user.Email.Address, (int)user.TypeUser, user.Active);
+        var outbox = CreateOutboxMessage(createUserEvent);
+
+        await outboxRepository.InsertOrUpdateAsync(outbox);
+        await outboxRepository.SaveChangesAsync();
+
+        await unitOfWork.CommitAsync();
+
+        await cache.RemoveAsync(EnumCacheTags.AllUsers);
+
+        response = (UserResponse)user;
+
+        return response;
+    });
 
     private OutboxMessage CreateOutboxMessage<T>(T content) where T : class => 
         new(typeof(T).AssemblyQualifiedName!, JsonSerializer.Serialize(content), DateTime.UtcNow);
@@ -243,4 +254,24 @@ namespace Fiap.CRM.Application.Users.Services;
 
         return cachedUserGames;
     });
+
+    public static (string FirstName, string LastName) SplitName(string fullName)
+    {
+        if (string.IsNullOrWhiteSpace(fullName))
+        {
+            return (string.Empty, string.Empty);
+        }
+
+        string[] parts = fullName.Trim().Split(' ');
+
+        string firstName = parts[0];
+
+        string lastName = string.Empty;
+        if (parts.Length > 1)
+        {
+            lastName = string.Join(" ", parts, 1, parts.Length - 1);
+        }
+
+        return (firstName, lastName);
+    }
 }
