@@ -6,6 +6,7 @@ using Fiap.CRM.Domain.SeedWork;
 using Fiap.CRM.Domain.UserAggregate;
 using Fiap.CRM.Infra.CacheService.Services;
 using Fiap.CRM.Infra.CrossCutting.Http.FCG;
+using Fiap.CRM.Infra.CrossCutting.Keycloak;
 using Fiap.CRM.Infra.Data;
 using Fiap.CRM.Infra.Data.Repositories;
 using Fiap.CRM.Infra.HandleBus.Handlers;
@@ -84,6 +85,7 @@ public static class NativeInjector
         #region Services
         services.AddScoped<IUsersService, UsersService>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IKeycloakService, KeycloakService>();
         #endregion
 
         #region Bus Services
