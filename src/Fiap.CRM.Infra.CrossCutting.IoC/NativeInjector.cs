@@ -205,14 +205,7 @@ public static class NativeInjector
             .Enrich.WithMachineName()
             .Enrich.WithProcessId()
             .Enrich.WithProperty("Application", "CRM")
-            .WriteTo.Console()
-            .WriteTo.GrafanaLoki(
-                uri: lokiUri,
-                labels:
-                [
-                    new() { Key = "app", Value = "dotnet-api" },
-                    new() { Key = "env", Value = environment.EnvironmentName }
-                ])
+            .WriteTo.Console(new Serilog.Formatting.Json.JsonFormatter())           
             .CreateLogger();
     }
 
