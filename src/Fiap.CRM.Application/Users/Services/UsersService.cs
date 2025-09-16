@@ -182,8 +182,8 @@ namespace Fiap.CRM.Application.Users.Services;
             user.Password = new Password(request.Password);
     }
 
-    public async Task<BaseResponse<object>> DeleteAsync(int id) 
-        //=> ExecuteAsync(async () =>
+    public Task<BaseResponse<object>> DeleteAsync(int id)
+        => ExecuteAsync(async () =>
     {
         var user = await userRepository.GetByIdAsync(id, noTracking: true);
 
@@ -210,7 +210,7 @@ namespace Fiap.CRM.Application.Users.Services;
 
         return BaseResponse<object>.Ok(null);
     }
-    //);
+    );
 
     public Task<List<UserLibraryGameResponse>> GetGamesByUserAsync(int id) => ExecuteAsync(async () =>
     {
