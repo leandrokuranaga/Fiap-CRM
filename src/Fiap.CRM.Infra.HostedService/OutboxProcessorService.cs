@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using Fiap.Contracts.Events;
 using Fiap.CRM.Domain.OutboxAggregate;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -46,20 +47,26 @@ public class OutboxProcessorService(
                     .SelectMany(a => a.GetTypes())
                     .FirstOrDefault(t => t.Name == msg.Type);
 
-            if (eventType == null)
+            if (eventType is null)
             {
                 logger.LogWarning("Event type {EventType} not found for outbox message {OutboxId}.", msg.Type, msg.Id);
                 continue;
             }
 
             var eventMessage = JsonSerializer.Deserialize(msg.Content, eventType);
-            if (eventMessage == null)
+            if (eventMessage is null)
             {
                 logger.LogWarning("Failed to deserialize content for outbox message {OutboxId}.", msg.Id);
                 continue;
             }
 
-            await bus.Advanced.Routing.Send(configuration["ServiceBus:LambdaQueueName"], eventMessage);
+            if (eventType is CreateUserIntegrationEvent)
+            {
+                await bus.Advanced.Routing.Send(configuration["ServiceBus:LambdaQueueName"], eventMessage);
+            }
+
+            await bus.Advanced.Routing.Send(configuration["ServiceBus:CRMQueueName"], eventMessage);
+
             msg.ProcessedOn = DateTime.UtcNow;
         }
 

@@ -15,8 +15,4 @@
     <ProjectReference Include="..\Fiap.CRM.Domain\Fiap.CRM.Domain.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="IntegrationEvents\" />
-  </ItemGroup>
-
 </Project>
