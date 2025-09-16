@@ -48,7 +48,6 @@ namespace Fiap.CRM.Unit.Tests._2._Application_Layer_Tests
                 _mockFcgService.Object,
                 _mockKeycloakService.Object,
                 _mockLogger.Object
-
             );
         }
 
