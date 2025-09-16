@@ -60,7 +60,7 @@ public class OutboxProcessorService(
                 continue;
             }
 
-            if (eventType is CreateUserIntegrationEvent)
+            if (eventType == typeof(CreateUserIntegrationEvent))
             {
                 await bus.Advanced.Routing.Send(configuration["ServiceBus:LambdaQueueName"], eventMessage);
             }

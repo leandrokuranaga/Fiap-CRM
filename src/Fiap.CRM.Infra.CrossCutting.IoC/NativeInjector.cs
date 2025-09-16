@@ -195,8 +195,8 @@ public static class NativeInjector
             .Routing(r => r.TypeBased()
                 .Map<AddGameToUserLibraryIntegrationEvent>(configuration["ServiceBus:CRMQueueName"])
                 .Map<CreateUserIntegrationEvent>(configuration["ServiceBus:CRMQueueName"])
-                .Map<UpdatedUserHandler>(configuration["ServiceBus:CRMQueueName"])
-                .Map<DeletedUserHandler>(configuration["ServiceBus:CRMQueueName"])
+                .Map<UpdatedUserIntegrationEvent>(configuration["ServiceBus:CRMQueueName"])
+                .Map<DeletedUserIntegrationEvent>(configuration["ServiceBus:CRMQueueName"])
 
                 .Map<CreateUserIntegrationEvent>(configuration["ServiceBus:LambdaQueueName"]))
             .Options(o => 
