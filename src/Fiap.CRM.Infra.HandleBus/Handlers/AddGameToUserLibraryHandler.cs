@@ -18,9 +18,8 @@ namespace Fiap.CRM.Infra.HandleBus.Handlers
             await userRepository.UpdateAsync(user);
             await userRepository.SaveChangesAsync();
 
-            // Busca o LibraryGame recém-adicionado
             var libraryGame = user.LibraryGames.FirstOrDefault(x => x.GameId == message.GameId);
-            if (libraryGame != null)
+            if (libraryGame is not null)
             {
                 var domainEvent = new AddGameToLibraryEvent(libraryGame);
                 await storeRepository.SaveAsync(domainEvent);
