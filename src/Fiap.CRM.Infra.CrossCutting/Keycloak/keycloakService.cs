@@ -212,7 +212,7 @@ namespace Fiap.CRM.Infra.CrossCutting.Keycloak
             if (!updateResponse.IsSuccessStatusCode)
             {
                 var errorContent = await updateResponse.Content.ReadAsStringAsync();
-                _logger.LogError("Erro atualizando usuário: {StatusCode}. Detalhes da API do Keycloak: {ErrorContent}", updateResponse.StatusCode, errorContent);
+                _logger.LogError("Error updating user: {StatusCode}. Keycloak API details: {ErrorContent}", updateResponse.StatusCode, errorContent);
                 return false;
             }
 
