@@ -39,8 +39,6 @@ namespace Fiap.CRM.Unit.Tests._2._Application_Layer_Tests
             _mockFcgService = new Mock<IFCGService>();
             _mockKeycloakService = new Mock<IKeycloakService>();
             _mockLogger = new Mock<ILogger<UsersService>>();
-       
-
             _usersService = new UsersService(
                 _mockNotification.Object,
                 _mockUserRepository.Object,
