@@ -23,5 +23,5 @@ jobs:
 
       - name: Build e Push
         run: |
-          docker build -f ./src/Fiap.Api/Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/fcg:latest .
+          docker build -f ./src/Fiap.CRM.Api/Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/fiap-crm:latest .
           docker push ${{ secrets.DOCKER_USERNAME }}/fiap-crm:latest
