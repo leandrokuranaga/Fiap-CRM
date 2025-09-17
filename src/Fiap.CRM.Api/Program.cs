@@ -22,7 +22,7 @@ builder.Configuration.AddUserSecrets<Program>(optional: true, reloadOnChange: tr
 
 builder.Configuration.AddSystemsManager(source =>
 {
-    source.Path = "/myapp/prod";
+    source.Path = "/myapp/prod/";
     source.Optional = true;
     source.ReloadAfter = TimeSpan.FromMinutes(5);
 });
