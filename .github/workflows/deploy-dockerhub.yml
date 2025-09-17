@@ -3,9 +3,7 @@ name: Publicar Imagem Docker no Docker Hub
 on:
   push:
     branches:
-    - main
-    tags:
-      - 'v*'
+    - dev
 
 jobs:
   build_and_push:
