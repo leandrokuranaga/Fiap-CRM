@@ -204,8 +204,8 @@ public static class NativeInjector
                 o.RetryStrategy(maxDeliveryAttempts: 3);
                 o.SetNumberOfWorkers(1);
                 o.SetMaxParallelism(1);
-            })
-            );
+            }),
+            isDefaultBus: true);
 
         return services;
     }
