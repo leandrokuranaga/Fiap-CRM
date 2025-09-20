@@ -58,25 +58,25 @@ builder.Services.AddSwaggerDocumentation();
 var app = builder.Build();
 
 app.UseRouting();
-
 app.UseSwaggerDocumentation();
 app.UseHttpsRedirection();
 
 app.UseCors("AllowAllOrigins");
-app.UseHttpMetrics();
 
 app.UseAuthentication();
 app.UseMiddleware<UnauthorizedResponseMiddleware>();
 app.UseAuthorization();
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
-
 app.MapControllers();
+
 app.MapHealthChecks("/health");
 
+app.UseHttpMetrics();
 app.MapMetrics();
 
 app.Run();
+
 
 [ExcludeFromCodeCoverage]
 public partial class Program { }
