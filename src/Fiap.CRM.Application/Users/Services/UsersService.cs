@@ -164,8 +164,18 @@ namespace Fiap.CRM.Application.Users.Services;
 
         UpdateUserProperties(user, request);
 
+        await unitOfWork.BeginTransactionAsync();
+
         await userRepository.UpdateAsync(user);
         await userRepository.SaveChangesAsync();
+
+        var updateUserEvent = new UpdatedUserIntegrationEvent(user.Id, user.Name, user.Email.Address, (int)user.TypeUser, user.Active);
+        var outbox = CreateOutboxMessage(updateUserEvent);
+
+        await outboxRepository.InsertOrUpdateAsync(outbox);
+        await outboxRepository.SaveChangesAsync();
+
+        await unitOfWork.CommitAsync();
 
         await cache.RemoveAsync(EnumCacheTags.AllUsers, EnumCacheTags.UserId(id));
 
@@ -183,7 +193,8 @@ namespace Fiap.CRM.Application.Users.Services;
             user.Password = new Password(request.Password);
     }
 
-    public Task<BaseResponse<object>> DeleteAsync(int id) => ExecuteAsync(async () =>
+    public Task<BaseResponse<object>> DeleteAsync(int id)
+        => ExecuteAsync(async () =>
     {
         var user = await userRepository.GetByIdAsync(id, noTracking: true);
 
@@ -193,13 +204,24 @@ namespace Fiap.CRM.Application.Users.Services;
             return BaseResponse<object>.Fail(notification.NotificationModel);
         }
 
+        await unitOfWork.BeginTransactionAsync();
+
         await userRepository.DeleteAsync(user);
         await userRepository.SaveChangesAsync();
+
+        var deletedUserEvent = new DeletedUserIntegrationEvent(user.Id, user.Name, user.Email.Address, (int)user.TypeUser, user.Active);
+        var outbox = CreateOutboxMessage(deletedUserEvent);
+
+        await outboxRepository.InsertOrUpdateAsync(outbox);
+        await outboxRepository.SaveChangesAsync();
+
+        await unitOfWork.CommitAsync();
 
         await cache.RemoveAsync(EnumCacheTags.UserGames(id), EnumCacheTags.UserId(id), EnumCacheTags.AllUsers);
 
         return BaseResponse<object>.Ok(null);
-    });
+    }
+    );
 
     public Task<List<UserLibraryGameResponse>> GetGamesByUserAsync(int id) => ExecuteAsync(async () =>
     {

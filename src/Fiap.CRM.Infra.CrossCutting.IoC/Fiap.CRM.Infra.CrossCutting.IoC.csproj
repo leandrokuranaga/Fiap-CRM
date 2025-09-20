@@ -26,7 +26,7 @@
     <ProjectReference Include="..\Fiap.Contracts.Events\Fiap.Contracts.Events.csproj" />
     <ProjectReference Include="..\Fiap.CRM.Application\Fiap.CRM.Application.csproj" />
     <ProjectReference Include="..\Fiap.CRM.Domain\Fiap.CRM.Domain.csproj" />
-    <ProjectReference Include="..\Fiap.CRM.Infra.HandleBus\Fiap.CRM.Infra.HandleBus.csproj" />
+    <ProjectReference Include="..\Fiap.CRM.Infra.HandleBus\Fiap.CRM.Infra.Bus.csproj" />
     <ProjectReference Include="..\Fiap.CRM.Infra.HostedService\Fiap.CRM.Infra.HostedService.csproj" />
     <ProjectReference Include="..\Fiap.CRM.Infra\Fiap.CRM.Infra.Data.csproj" />
   </ItemGroup>
