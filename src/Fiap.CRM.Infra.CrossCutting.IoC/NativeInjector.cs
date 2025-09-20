@@ -1,13 +1,16 @@
-﻿using Fiap.Contracts.Events;
+﻿using EventStore.Client;
+using Fiap.Contracts.Events;
 using Fiap.CRM.Application.Auth.Services;
 using Fiap.CRM.Application.Users.Services;
 using Fiap.CRM.Domain.OutboxAggregate;
 using Fiap.CRM.Domain.SeedWork;
 using Fiap.CRM.Domain.UserAggregate;
+using Fiap.CRM.Infra.Bus.Handlers;
 using Fiap.CRM.Infra.CacheService.Services;
 using Fiap.CRM.Infra.CrossCutting.Http.FCG;
 using Fiap.CRM.Infra.CrossCutting.Keycloak;
 using Fiap.CRM.Infra.Data;
+using Fiap.CRM.Infra.Data.EventSourcing;
 using Fiap.CRM.Infra.Data.Repositories;
 using Fiap.CRM.Infra.HandleBus.Handlers;
 using Fiap.CRM.Infra.HostedService;
@@ -55,10 +58,19 @@ public static class NativeInjector
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
-        var connectionString = configuration.GetConnectionString("CRMConnection");
+        var connectionString = configuration["ConnectionString:CRMConnection"];
         
         services.AddDbContext<Context>(options =>
             options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 21))));
+
+        services.AddSingleton(sp =>
+        {
+            var conn = configuration.GetConnectionString("EventStore");
+            if (string.IsNullOrWhiteSpace(conn))
+                throw new InvalidOperationException("EventStore connection string is not configured.");
+            var settings = EventStoreClientSettings.Create(conn);
+            return new EventStoreClient(settings);
+        });
     }
 
     public static void AddLocalHttpClients(this IServiceCollection services, IConfiguration configuration) 
@@ -76,6 +88,8 @@ public static class NativeInjector
         services.AddScoped<INotification, Notification>();
 
         services.AddHostedService<OutboxProcessorService>();
+        services.AddScoped<IEventStoreRepository, EventStoreRepository>();
+
 
         #region Repositories
         services.AddScoped<IUserRepository, UserRepository>();
@@ -90,6 +104,9 @@ public static class NativeInjector
 
         #region Bus Services
         services.AutoRegisterHandlersFromAssemblyOf<AddGameToUserLibraryHandler>();
+        services.AutoRegisterHandlersFromAssemblyOf<CreatedUserHandler>();
+        services.AutoRegisterHandlersFromAssemblyOf<DeletedUserHandler>();
+        services.AutoRegisterHandlersFromAssemblyOf<UpdatedUserHandler>();
         #endregion
 
     }
@@ -179,18 +196,21 @@ public static class NativeInjector
             ))
             .Routing(r => r.TypeBased()
                 .Map<AddGameToUserLibraryIntegrationEvent>(configuration["ServiceBus:CRMQueueName"])
+                .Map<CreateUserIntegrationEvent>(configuration["ServiceBus:CRMQueueName"])
+                .Map<UpdatedUserIntegrationEvent>(configuration["ServiceBus:CRMQueueName"])
+                .Map<DeletedUserIntegrationEvent>(configuration["ServiceBus:CRMQueueName"])
+
                 .Map<CreateUserIntegrationEvent>(configuration["ServiceBus:LambdaQueueName"]))
             .Options(o => 
             {
                 o.RetryStrategy(maxDeliveryAttempts: 3);
                 o.SetNumberOfWorkers(1);
                 o.SetMaxParallelism(1);
-            })
-            );
+            }),
+            isDefaultBus: true);
 
         return services;
     }
-
     private static void ConfigureSerilog(IServiceCollection services, IConfiguration configuration, IWebHostEnvironment environment)
     {
         services.AddOptions<Utils.Serilog>()
