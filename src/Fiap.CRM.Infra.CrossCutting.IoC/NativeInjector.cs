@@ -209,7 +209,6 @@ public static class NativeInjector
 
         return services;
     }
-
     private static void ConfigureSerilog(IServiceCollection services, IConfiguration configuration, IWebHostEnvironment environment)
     {
         services.AddOptions<Utils.Serilog>()
