@@ -1,6 +1,33 @@
-﻿namespace Fiap.CRM.Domain.UserAggregate.Events;
+﻿using Fiap.CRM.Domain.SeedWork;
+using System.Text.Json;
 
-public class CreatedUserEvent
+namespace Fiap.CRM.Domain.UserAggregate.Events;
+
+public record CreatedUserEvent : StoredEvent
 {
-    
+    public int UserId { get; set; }
+    public string Name { get; set; } = string.Empty;
+
+    public CreatedUserEvent()
+    {
+        
+    }
+
+    public CreatedUserEvent(User user)
+    {
+        Id = Guid.NewGuid();
+        UserId = user.Id;
+        Name = user.Name;
+        OccurredOn = DateTime.UtcNow;
+        StreamName = $"{nameof(User)}-{user.Id}";
+        Type = nameof(User);
+        Data = JsonSerializer.Serialize(new
+        {
+            user.Id,
+            user.Name,
+            user.Email,
+            TypeUser = (int)user.TypeUser,
+            user.Active
+        });
+    }
 }
