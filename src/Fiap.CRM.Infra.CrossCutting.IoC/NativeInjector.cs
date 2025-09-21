@@ -57,7 +57,7 @@ public static class NativeInjector
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
-        var connectionString = configuration["ConnectionString:CRMConnection"];
+        var connectionString = configuration.GetConnectionString("CRMConnection");
         
         services.AddDbContext<Context>(options =>
             options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 21))));
