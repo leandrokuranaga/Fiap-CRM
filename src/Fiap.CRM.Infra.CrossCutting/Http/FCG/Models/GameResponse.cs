@@ -9,6 +9,4 @@
         public int? PromotionId { get; set; }
         public decimal PriceWithDiscount { get; set; }
     }
-
-    public record ApiEnvelope<T>(T Data, bool Success, string? Message);
 }

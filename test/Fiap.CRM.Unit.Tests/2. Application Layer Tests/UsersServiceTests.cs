@@ -460,20 +460,17 @@ namespace Fiap.CRM.Unit.Tests._2._Application_Layer_Tests
                 }
             };
 
-            var gamesResponse = new ApiEnvelope<List<GameResponse>>(
+            var gamesResponse = BaseResponse<List<GameResponse>>.Ok(
                 new List<GameResponse>
                 {
-                    new GameResponse
-                    {
+                    new() {
                         Id = 1,
                         Name = "Test Game",
                         Genre = "Action",
                         Price = 60M,
                         PriceWithDiscount = 45M
                     }
-                },
-                true,
-                null
+                }
             ); 
 
             _mockUserRepository
@@ -532,7 +529,7 @@ namespace Fiap.CRM.Unit.Tests._2._Application_Layer_Tests
                 LibraryGames = new List<Domain.UserAggregate.Entities.LibraryGame>()
             };
 
-            var failedResponse = new ApiEnvelope<List<GameResponse>>(null, false, "Service unavailable");
+            var failedResponse = BaseResponse<List<GameResponse>>.Fail("Service unavailable");
 
             _mockUserRepository
                 .Setup(x => x.GetWithLibraryAsync(userId, It.IsAny<CancellationToken>()))

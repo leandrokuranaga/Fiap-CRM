@@ -44,8 +44,12 @@ builder.Services.AddCustomMvc();
 builder.Services
     .AddHealthChecks()
     .AddMySql(databaseConnection.CRMConnection, name: "mysql")
+    .AddEventStore(databaseConnection.EventStore)
     .AddApplicationStatus()
-    .AddRedis(databaseConnection.RedisConnectionString, name: "redis");
+    .AddSqs(o =>
+        o.AddQueue(builder.Configuration.GetSection("ServiceBus:CRMQueueName").ToString())
+    )
+    .AddRedis(databaseConnection.Redis, name: "redis");
 
 builder.Services.AddEndpointsApiExplorer();
 
