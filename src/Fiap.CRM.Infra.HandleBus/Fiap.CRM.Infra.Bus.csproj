@@ -13,6 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Fiap.Contracts.Events\Fiap.Contracts.Events.csproj" />
     <ProjectReference Include="..\Fiap.CRM.Domain\Fiap.CRM.Domain.csproj" />
+    <ProjectReference Include="..\Fiap.CRM.Infra.CrossCutting\Fiap.CRM.Infra.CrossCutting.csproj" />
   </ItemGroup>
 
 </Project>
