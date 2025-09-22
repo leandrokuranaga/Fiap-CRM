@@ -58,7 +58,7 @@ public static class NativeInjector
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
-        var connectionString = configuration["ConnectionString:CRMConnection"];
+        var connectionString = configuration.GetConnectionString("CRMConnection");
         
         services.AddDbContext<Context>(options =>
             options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 21))));
@@ -232,7 +232,7 @@ public static class NativeInjector
                 uri: lokiUri,
                 labels:
                 [
-                    new() { Key = "app", Value = "dotnet-api" },
+                    new() { Key = "app-crm", Value = "dotnet-api" },
                     new() { Key = "env", Value = environment.EnvironmentName }
                 ])
             .CreateLogger();

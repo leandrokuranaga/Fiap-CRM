@@ -259,16 +259,25 @@ public class UsersService(
     {
         var cacheKey = EnumCacheTags.UserGames(id);
 
+        logger.LogInformation("Fetching user games for user {UserId} with cache key {CacheKey}", id, cacheKey);
+
         async Task<List<UserLibraryGameResponse>> fallbackFunc()
         {
             logger.LogInformation("Cache miss for user games {UserId}. Fetching from database.", id);
 
             var user = await userRepository.GetWithLibraryAsync(id);
 
+
+            logger.LogInformation("user {user}", user);
+
+
             if (user is null)
                 return [];
 
             var gamesResponse = await fcgService.GetAllGamesAsync();
+
+            logger.LogInformation("games {gamesResponse}", gamesResponse);
+
 
             if (!gamesResponse.Success || gamesResponse.Data == null)
                 return [];
@@ -294,7 +303,7 @@ public class UsersService(
                     });
                 }
             }
-
+            logger.LogInformation("userGames {userGames}", userGames);
             return userGames;
         }
 
