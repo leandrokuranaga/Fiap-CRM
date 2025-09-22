@@ -16,16 +16,16 @@ using System.Text.Json;
 
 namespace Fiap.CRM.Application.Users.Services;
 
- public class UsersService(
-        INotification notification,
-        IUserRepository userRepository,
-        IUnitOfWork unitOfWork,
-        ICacheService cache,
-        IOutboxRepository outboxRepository,
-        IFCGService fcgService,
-        IKeycloakService keycloakService,
-        ILogger<UsersService> logger
-        ) : BaseService(notification), IUsersService
+public class UsersService(
+    INotification notification,
+    IUserRepository userRepository,
+    IUnitOfWork unitOfWork,
+    ICacheService cache,
+    IOutboxRepository outboxRepository,
+    IFCGService fcgService,
+    IKeycloakService keycloakService,
+    ILogger<UsersService> logger
+) : BaseService(notification), IUsersService
 {
     public Task<List<UserResponse>> GetAllAsync() => ExecuteAsync(async () =>
     {
@@ -109,7 +109,7 @@ namespace Fiap.CRM.Application.Users.Services;
         return response;
     });
 
-    private OutboxMessage CreateOutboxMessage<T>(T content) where T : class => 
+    private OutboxMessage CreateOutboxMessage<T>(T content) where T : class =>
         new(typeof(T).AssemblyQualifiedName!, JsonSerializer.Serialize(content), DateTime.UtcNow);
 
     public Task<UserResponse> CreateAdminAsync(CreateUserAdminRequest request) => ExecuteAsync(async () =>
@@ -134,7 +134,18 @@ namespace Fiap.CRM.Application.Users.Services;
         await userRepository.InsertOrUpdateAsync(user);
         await userRepository.SaveChangesAsync();
 
-        var createUserEvent = new CreateUserIntegrationEvent(user.Id, user.Name, user.Email.Address, (int)user.TypeUser, user.Active);
+     
+        (string name, string lastName) = SplitName(user.Name);
+
+        var kcResult = await keycloakService.CreateUserAsync(user.Email.Address, name, lastName, request.Password, user.TypeUser.ToString());
+        if (!kcResult)
+        {
+            notification.AddNotification("Keycloak", "Error creating admin user in Keycloak", NotificationModel.ENotificationType.BusinessRules);
+            await unitOfWork.RollbackAsync();
+            return response;
+        }
+
+        var createUserEvent = new CreateUserIntegrationEvent(user.Id, user.Name, user.Email.Address,(int)user.TypeUser, user.Active);
         var outbox = CreateOutboxMessage(createUserEvent);
 
         await outboxRepository.InsertOrUpdateAsync(outbox);
@@ -154,7 +165,7 @@ namespace Fiap.CRM.Application.Users.Services;
 
         Validate(request, new UpdateUserRequestValidator());
 
-        var user = await userRepository.GetByIdAsync(id, noTracking: true);
+        var user = await userRepository.GetByIdAsync(id, noTracking: false);
 
         if (user is null)
         {
@@ -162,12 +173,24 @@ namespace Fiap.CRM.Application.Users.Services;
             return BaseResponse<object>.Fail(notification.NotificationModel);
         }
 
+        // Armazenar o email antigo para uso no Keycloak
+        var oldEmail = user.Email.Address;
+
         UpdateUserProperties(user, request);
 
         await unitOfWork.BeginTransactionAsync();
 
         await userRepository.UpdateAsync(user);
         await userRepository.SaveChangesAsync();
+
+        // Chamada para atualizar o usuário no Keycloak
+        var kcResult = await keycloakService.UpdateUserAsync(oldEmail, user.Email.Address, user.Name, request.Password);
+        if (!kcResult)
+        {
+            notification.AddNotification("Keycloak", "Error updating user in Keycloak", NotificationModel.ENotificationType.BusinessRules);
+            await unitOfWork.RollbackAsync();
+            return BaseResponse<object>.Fail(notification.NotificationModel);
+        }
 
         var updateUserEvent = new UpdatedUserIntegrationEvent(user.Id, user.Name, user.Email.Address, (int)user.TypeUser, user.Active);
         var outbox = CreateOutboxMessage(updateUserEvent);
@@ -195,32 +218,41 @@ namespace Fiap.CRM.Application.Users.Services;
 
     public Task<BaseResponse<object>> DeleteAsync(int id)
         => ExecuteAsync(async () =>
-    {
-        var user = await userRepository.GetByIdAsync(id, noTracking: true);
-
-        if (user is null)
         {
-            notification.AddNotification("Delete User", "User Not found", NotificationModel.ENotificationType.NotFound);
-            return BaseResponse<object>.Fail(notification.NotificationModel);
+            var user = await userRepository.GetByIdAsync(id, noTracking: false);
+
+            if (user is null)
+            {
+                notification.AddNotification("Delete User", "User Not found", NotificationModel.ENotificationType.NotFound);
+                return BaseResponse<object>.Fail(notification.NotificationModel);
+            }
+
+            await unitOfWork.BeginTransactionAsync();
+
+            await userRepository.DeleteAsync(user);
+            await userRepository.SaveChangesAsync();
+
+            // Chamada para deletar o usuário no Keycloak
+            var kcResult = await keycloakService.DeleteUserAsync(user.Email.Address);
+            if (!kcResult)
+            {
+                notification.AddNotification("Keycloak", "Error deleting user in Keycloak", NotificationModel.ENotificationType.BusinessRules);
+                await unitOfWork.RollbackAsync();
+                return BaseResponse<object>.Fail(notification.NotificationModel);
+            }
+
+            var deletedUserEvent = new DeletedUserIntegrationEvent(user.Id, user.Name, user.Email.Address, (int)user.TypeUser, user.Active);
+            var outbox = CreateOutboxMessage(deletedUserEvent);
+
+            await outboxRepository.InsertOrUpdateAsync(outbox);
+            await outboxRepository.SaveChangesAsync();
+
+            await unitOfWork.CommitAsync();
+
+            await cache.RemoveAsync(EnumCacheTags.UserGames(id), EnumCacheTags.UserId(id), EnumCacheTags.AllUsers);
+
+            return BaseResponse<object>.Ok(null);
         }
-
-        await unitOfWork.BeginTransactionAsync();
-
-        await userRepository.DeleteAsync(user);
-        await userRepository.SaveChangesAsync();
-
-        var deletedUserEvent = new DeletedUserIntegrationEvent(user.Id, user.Name, user.Email.Address, (int)user.TypeUser, user.Active);
-        var outbox = CreateOutboxMessage(deletedUserEvent);
-
-        await outboxRepository.InsertOrUpdateAsync(outbox);
-        await outboxRepository.SaveChangesAsync();
-
-        await unitOfWork.CommitAsync();
-
-        await cache.RemoveAsync(EnumCacheTags.UserGames(id), EnumCacheTags.UserId(id), EnumCacheTags.AllUsers);
-
-        return BaseResponse<object>.Ok(null);
-    }
     );
 
     public Task<List<UserLibraryGameResponse>> GetGamesByUserAsync(int id) => ExecuteAsync(async () =>
@@ -232,15 +264,15 @@ namespace Fiap.CRM.Application.Users.Services;
             logger.LogInformation("Cache miss for user games {UserId}. Fetching from database.", id);
 
             var user = await userRepository.GetWithLibraryAsync(id);
-            
+
             if (user is null)
                 return [];
 
             var gamesResponse = await fcgService.GetAllGamesAsync();
-            
+
             if (!gamesResponse.Success || gamesResponse.Data == null)
                 return [];
-            
+
             var gamesDict = gamesResponse.Data.ToDictionary(g => g.Id, g => g);
 
             var userGames = new List<UserLibraryGameResponse>();
