@@ -6,4 +6,16 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Fiap.CRM.Domain\Fiap.CRM.Domain.csproj" />
+    <ProjectReference Include="..\Fiap.CRM.Infra.CrossCutting\Fiap.CRM.Infra.CrossCutting.csproj" />
+    <ProjectReference Include="..\Fiap.Contracts.Events\Fiap.Contracts.Events.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="12.0.0" />
+    <PackageReference Include="Grpc.Core.Api" Version="2.71.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.13.1" />
+  </ItemGroup>
+
 </Project>
