@@ -116,7 +116,7 @@ docker run -p 8080:8080 fiap-crm
 
 Este projeto foi desenvolvido como parte do curso da FIAP, demonstrando:
 - Implementação de Clean Architecture
-- Padrões de design (Repository, Outbox, CQRS)
+- Padrões de design (Repository, Outbox)
 - Integração entre microsserviços
 - Práticas de DevOps (CI/CD, Docker, AWS)
 - Testes automatizados (Unit e BDD)
