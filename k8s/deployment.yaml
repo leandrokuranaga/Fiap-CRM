@@ -18,8 +18,8 @@ spec:
     spec:
       containers:
         - name: crm-api
-          image: fiap/crm-api:latest
-          imagePullPolicy: Never
+          image: kuranaga/fiap-crm:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
               protocol: TCP
