@@ -1,0 +1,22 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: crm-api
+
+namespace: fiap
+
+resources:
+  - deployment.yaml
+  - service.yaml
+  - hpa.yaml
+  - configmap.yaml
+  - secret.yaml
+
+commonLabels:
+  project: fiap
+  service: crm
+
+images:
+  - name: fiap/crm-api
+    newTag: latest
