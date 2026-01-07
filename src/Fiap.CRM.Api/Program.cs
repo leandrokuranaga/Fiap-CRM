@@ -43,7 +43,6 @@ builder.Services.AddCustomMvc();
 
 builder.Services
     .AddHealthChecks()
-    .AddMySql(databaseConnection.CRMConnection, name: "mysql")
     .AddApplicationStatus()
     .AddRedis(databaseConnection.Redis, name: "redis");
 
