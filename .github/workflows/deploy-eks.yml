@@ -67,6 +67,8 @@ jobs:
           CRM_CONNECTION: ${{ secrets.CRM_CONNECTION }}
           REDIS_CONNECTION: ${{ secrets.REDIS_CONNECTION }}
           EVENTSTORE_CONNECTION: ${{ secrets.EVENTSTORE_CONNECTION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_SQS_ACCESS_KEY: ${{ secrets.AWS_SQS_ACCESS_KEY }}
           AWS_SQS_SECRET_KEY: ${{ secrets.AWS_SQS_SECRET_KEY }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
