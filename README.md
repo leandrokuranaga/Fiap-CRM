@@ -104,7 +104,7 @@ docker run -p 8080:8080 fiap-crm
 | CD | Status |
 | --- | --- |
 | Dockerhub | [![Publicar Imagem Docker no Docker Hub](https://github.com/leandrokuranaga/fiap-crm/actions/workflows/deploy-dockerhub.yml/badge.svg)](https://github.com/leandrokuranaga/fiap-crm/actions/workflows/deploy-dockerhub.yml) |
-| AWS | [![Deploy to AWS ECS](https://github.com/leandrokuranaga/fiap-crm/actions/workflows/deploy-aws.yml/badge.svg)](https://github.com/leandrokuranaga/fiap-crm/actions/workflows/deploy-aws.yml) |
+| EKS | [![Deploy to AWS EKS](https://github.com/leandrokuranaga/fiap-crm/actions/workflows/deploy-eks.yml/badge.svg)](https://github.com/leandrokuranaga/fiap-crm/actions/workflows/deploy-eks.yml) |
 
 ## 📋 Monitoramento
 
